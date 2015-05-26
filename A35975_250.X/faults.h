@@ -20,61 +20,61 @@ EXTERN TYPE_DEBUG_COUNTER global_debug_counter;
 
 /*
 
-Magnetron Heater Faults
-* External Analog Comparator Over voltage with Latch
-* ADC Voltage reading over hard limit
-* ADC Voltage reading over programmed value by X percent
-* ADC Voltage reading under programmed value by X percent
-* ADC Current reading to high for programmed voltage - A short circuit could cause this
-* ADC Current reading to low for porgrammed voltage - An open circuit could cause this
+  Magnetron Heater Faults
+  * External Analog Comparator Over voltage with Latch
+  * ADC Voltage reading over hard limit
+  * ADC Voltage reading over programmed value by X percent
+  * ADC Voltage reading under programmed value by X percent
+  * ADC Current reading to high for programmed voltage - A short circuit could cause this
+  * ADC Current reading to low for porgrammed voltage - An open circuit could cause this
 
-Magnetron Magnet 
-* External Analog Comparator Current out of Range Latch (note this will of course be set durring start up)
-* ADC Current reading over hard limit
-* ADC Current reading over programmed value by X percent
-* ADC Current reading under programmed value by X percent
-* ADC Voltage reading to high for programmed current - An open circuit could cause this
-* ADC Voltage reading to low for porgrammed current - A short circuit could cause this
+  Magnetron Magnet 
+  * External Analog Comparator Current out of Range Latch (note this will of course be set durring start up)
+  * ADC Current reading over hard limit
+  * ADC Current reading over programmed value by X percent
+  * ADC Current reading under programmed value by X percent
+  * ADC Voltage reading to high for programmed current - An open circuit could cause this
+  * ADC Voltage reading to low for porgrammed current - A short circuit could cause this
 
-Arc Faults
-* Too many consecutive alts
-* Too many arcs over the last 300 pulses (1 second at full rep rate)
-* Too many arcs over the last 18000 Pulses (1 minute at full rep rate)
-
-
-Lambda Faults
-* Lambda Sum Fault
-* Lambda Over Temp
-* Lambda Interlock Open
-* Lambda Load Fault (usually a short on the lambda output)
-* Lambda Phase Loss
-* Lambda EOC Timeout (the lambda did not reach EOC durring the required time)
-* ADC Lambda vpeak reading is too high
-* ADC Lambda vpeak reading is too low (this needs a delay because the lamabda of course starts at zero Volts so it takes a while for Vpeak to charge up)
-
-Thyratron Faults
-* ADC Cathode Heater Voltage over hard limit
-* ADC Cathode Heater Voltage over programmed value by X%
-* ADC Cathode Heater Voltage under programmed value by X%
-* Cathode Heater 4-20mA driver fault (the same line is used to monitor both the cathode heater and reservoir heater driver fault)
-* Cathode Heater Control Saturation - The PID loop has saturated indicating that the cathode voltage is no longer under control
-
-* ADC Reservoir Heater Voltage over hard limit
-* ADC Reservoir Heater Voltage over programmed value by X%
-* ADC Reservoir Heater Voltage under programmed value by X%
-* Reservoir Heater 4-20mA driver fault (the same line is used to monitor both the cathode heater and reservoir heater driver fault)
-* Reservoir Heater Control Saturation - The PID loop has saturated indicating that the reservoir voltage is no longer under control
+  Arc Faults
+  * Too many consecutive alts
+  * Too many arcs over the last 300 pulses (1 second at full rep rate)
+  * Too many arcs over the last 18000 Pulses (1 minute at full rep rate)
 
 
-Other Faults on control board
-* The High Voltage Lambda is Not Powered
-* Control Board Interlock #1 is open (this is where the water flow is monitored on the test unit)
-* Control Board Interlock #2 is open
-* Control Board Interlock #3 is open
-* Control Board Interlock #4 is open
+  Lambda Faults
+  * Lambda Sum Fault
+  * Lambda Over Temp
+  * Lambda Interlock Open
+  * Lambda Load Fault (usually a short on the lambda output)
+  * Lambda Phase Loss
+  * Lambda EOC Timeout (the lambda did not reach EOC durring the required time)
+  * ADC Lambda vpeak reading is too high
+  * ADC Lambda vpeak reading is too low (this needs a delay because the lamabda of course starts at zero Volts so it takes a while for Vpeak to charge up)
+
+  Thyratron Faults
+  * ADC Cathode Heater Voltage over hard limit
+  * ADC Cathode Heater Voltage over programmed value by X%
+  * ADC Cathode Heater Voltage under programmed value by X%
+  * Cathode Heater 4-20mA driver fault (the same line is used to monitor both the cathode heater and reservoir heater driver fault)
+  * Cathode Heater Control Saturation - The PID loop has saturated indicating that the cathode voltage is no longer under control
+
+  * ADC Reservoir Heater Voltage over hard limit
+  * ADC Reservoir Heater Voltage over programmed value by X%
+  * ADC Reservoir Heater Voltage under programmed value by X%
+  * Reservoir Heater 4-20mA driver fault (the same line is used to monitor both the cathode heater and reservoir heater driver fault)
+  * Reservoir Heater Control Saturation - The PID loop has saturated indicating that the reservoir voltage is no longer under control
 
 
-*/
+  Other Faults on control board
+  * The High Voltage Lambda is Not Powered
+  * Control Board Interlock #1 is open (this is where the water flow is monitored on the test unit)
+  * Control Board Interlock #2 is open
+  * Control Board Interlock #3 is open
+  * Control Board Interlock #4 is open
+
+
+  */
 
 // Debug Fault Register
 
@@ -175,14 +175,14 @@ void UpdateFaults(void);
   * Checks all the Thyratron Fault Inputs and sets Status/Warning/Fault registers
   * Checks all the Control Board Faults and sets Status/Warning/Fault registers
 
-*/
+  */
 
 
 void UpdatePulseData(unsigned char mode);
 /*
   This function updates all the pulse faults and is called after each pulse.
   * Looks for an arc. 
-*/
+  */
 
 void ResetHWLatches(void);
 

@@ -25,9 +25,9 @@
 
 
 #ifndef ISMAIN 
-  #define EXTERN extern
+#define EXTERN extern
 #else
-  #define EXTERN /*main*/
+#define EXTERN /*main*/
 #endif
 
 // --------- Compile Time Options -----------------
@@ -76,15 +76,15 @@
 
 // ----------------- DIGITAL INPUT PINS --------------- //
 /*
-	RA15 - optical HV enable1
-	RA14 - optical HV enable2
-	RA13 - test pulse good2
-	RA12 - test pulse good1
+  RA15 - optical HV enable1
+  RA14 - optical HV enable2
+  RA13 - test pulse good2
+  RA12 - test pulse good1
   
-	RB15 - CS DAC Enable 
+  RB15 - CS DAC Enable 
 
-	RB11 - optical Trig enable
-	RB9  - optical test pulse enable
+  RB11 - optical Trig enable
+  RB9  - optical test pulse enable
 
 
 */
@@ -93,7 +93,7 @@
 /*
 
   
-*/
+ */
 
 //					         fedcba9876543210
 #define A35975_TRISA_VALUE 0b1111000000000000 
@@ -143,28 +143,28 @@
 
 
 #ifndef DEMO
-	#define PIN_OPT_HV_ENABLE1_INPUT             _RA15	   
-	#define ILL_OPT_HV_ENABLE                    1
+#define PIN_OPT_HV_ENABLE1_INPUT             _RA15	   
+#define ILL_OPT_HV_ENABLE                    1
 
-	#define PIN_OPT_HV_ENABLE2_INPUT             _RA14	   // A14 and A15 inputs are tied together
+#define PIN_OPT_HV_ENABLE2_INPUT             _RA14	   // A14 and A15 inputs are tied together
 
-	#define PIN_OPT_TRIG_ENABLE_INPUT            _RB11
-	#define ILL_OPT_TRIG_ENABLE                  1
+#define PIN_OPT_TRIG_ENABLE_INPUT            _RB11
+#define ILL_OPT_TRIG_ENABLE                  1
 
-	#define PIN_OPT_TEST_PULSE_ENABLE_INPUT       _RB9	   
-	#define ILL_OPT_TEST_PULSE_ENABLE             1
+#define PIN_OPT_TEST_PULSE_ENABLE_INPUT       _RB9	   
+#define ILL_OPT_TEST_PULSE_ENABLE             1
 
 #else
-	#define PIN_OPT_HV_ENABLE1_INPUT             1	   
-	#define ILL_OPT_HV_ENABLE                    1
+#define PIN_OPT_HV_ENABLE1_INPUT             1	   
+#define ILL_OPT_HV_ENABLE                    1
 
-	#define PIN_OPT_HV_ENABLE2_INPUT             _RA14	   // A14 and A15 inputs are tied together
+#define PIN_OPT_HV_ENABLE2_INPUT             _RA14	   // A14 and A15 inputs are tied together
 
-	#define PIN_OPT_TRIG_ENABLE_INPUT              1
-	#define ILL_OPT_TRIG_ENABLE                    1
+#define PIN_OPT_TRIG_ENABLE_INPUT              1
+#define ILL_OPT_TRIG_ENABLE                    1
 
-	#define PIN_OPT_TEST_PULSE_ENABLE_INPUT        1	   
-	#define ILL_OPT_TEST_PULSE_ENABLE              1
+#define PIN_OPT_TEST_PULSE_ENABLE_INPUT        1	   
+#define ILL_OPT_TEST_PULSE_ENABLE              1
 #endif
 
 #define PIN_TEST_PULSE_GOOD1_INPUT           _RA12
@@ -287,7 +287,7 @@
 
 /* 
    --- I2C setup ---
-  See i2c.h and Microchip documentation for more information about the condfiguration
+   See i2c.h and Microchip documentation for more information about the condfiguration
 */
 #define I2CCON_SETUP   (I2C_ON & I2C_IDLE_STOP &  I2C_CLK_REL & I2C_IPMI_DIS & I2C_7BIT_ADD & I2C_SLW_EN & I2C_SM_DIS & I2C_GCALL_DIS & I2C_STR_DIS & I2C_ACK & I2C_ACK_DIS)
 #define I2C_BAUD_RATE_GENERATOR   ((FCY_CLK/I2C_CLK) - (FCY_CLK/4000000) - 1) // This equation assumes PGD of 250nS.  This is not listed in the data sheet.  The supplementat data sheet uses
@@ -308,10 +308,10 @@
    --- CAN 1 setup ---
    See can.h and Microchip documentation for more information about the condfiguration
 
-*
-#define A35975_C1MODE_VALUE        (UART_EN & UART_IDLE_STOP & UART_DIS_WAKE & UART_DIS_LOOPBACK & UART_DIS_ABAUD & UART_NO_PAR_8BIT & UART_1STOPBIT)
-#define A35975_C1STA_VALUE         (UART_INT_TX & UART_TX_PIN_NORMAL & UART_TX_ENABLE & UART_INT_RX_CHAR & UART_ADR_DETECT_DIS)
-#define A35975_C1BRG_VALUE         (((FCY_CLK/UART1_BAUDRATE)/16)-1)
+   *
+   #define A35975_C1MODE_VALUE        (UART_EN & UART_IDLE_STOP & UART_DIS_WAKE & UART_DIS_LOOPBACK & UART_DIS_ABAUD & UART_NO_PAR_8BIT & UART_1STOPBIT)
+   #define A35975_C1STA_VALUE         (UART_INT_TX & UART_TX_PIN_NORMAL & UART_TX_ENABLE & UART_INT_RX_CHAR & UART_ADR_DETECT_DIS)
+   #define A35975_C1BRG_VALUE         (((FCY_CLK/UART1_BAUDRATE)/16)-1)
 
 */
 
@@ -388,22 +388,22 @@
 #define DELAY_TCY_10US                          100       // 10us us at 10MHz Clock
 
 #define DELAY_PULSE_CABLE_SELECT_PROP_DELAY_US  1        // 1uS
-                                                          // This delay must be longer than the propogation delay on the Isolated DAC Cable Select Line
+// This delay must be longer than the propogation delay on the Isolated DAC Cable Select Line
 #define DELAY_PULSE_CABLE_SELECT_PROP_DELAY     (FCY_CLK_MHZ*DELAY_PULSE_CABLE_SELECT_PROP_DELAY_US)
 
 
 
 /*
-#define DELAY_TCY_TRIGGER_TO_ADC_SAMPLE_US      2.5       // 2uS
-                                                          // This is the delay between when a trigger pulse is detected and when the isolated DACs are sampled
-#define DELAY_TCY_TRIGGER_TO_ADC_SAMPLE         (FCY_CLK_MHZ*DELAY_TCY_TRIGGER_TO_ADC_SAMPLE_US)
+  #define DELAY_TCY_TRIGGER_TO_ADC_SAMPLE_US      2.5       // 2uS
+  // This is the delay between when a trigger pulse is detected and when the isolated DACs are sampled
+  #define DELAY_TCY_TRIGGER_TO_ADC_SAMPLE         (FCY_CLK_MHZ*DELAY_TCY_TRIGGER_TO_ADC_SAMPLE_US)
 
 
-#define DELAY_TCY_ISR_CALL_MODIFIER             5         // 
-                                                          // This compensates for the tirgger ISR call delay and instructions before the delay call is made
-                                                          // This should be equal to 4 + the number of instructions cycles to reach 
-                                                          //   __delay32(DELAY_TCY_TRIGGER_TO_ADC_SAMPLE - DELAY_TCY_ISR_CALL_MODIFIER);
-#define DELAY_TCY_TRIGGER_TO_CURRENT_PULSE_NS   100      
+  #define DELAY_TCY_ISR_CALL_MODIFIER             5         // 
+  // This compensates for the tirgger ISR call delay and instructions before the delay call is made
+  // This should be equal to 4 + the number of instructions cycles to reach 
+  //   __delay32(DELAY_TCY_TRIGGER_TO_ADC_SAMPLE - DELAY_TCY_ISR_CALL_MODIFIER);
+  #define DELAY_TCY_TRIGGER_TO_CURRENT_PULSE_NS   100      
 */
 
 
@@ -415,42 +415,42 @@
 
 // analog set pointers
 enum {
-   ANA_SET_EK = 0,
-   ANA_SET_EG,
-   ANA_SET_EF,
-   ANA_SET_HV_ON,
-   ANA_SET_HTR_ON,
-   ANA_SET_PULSETOP_ON,
-   ANA_SET_TRIG_ON,
-   ANA_SET_WDOG,
+  ANA_SET_EK = 0,
+  ANA_SET_EG,
+  ANA_SET_EF,
+  ANA_SET_HV_ON,
+  ANA_SET_HTR_ON,
+  ANA_SET_PULSETOP_ON,
+  ANA_SET_TRIG_ON,
+  ANA_SET_WDOG,
 };
 
 
-  EXTERN struct {
-	    unsigned int channel;       /* DAC channel 							   */
-		unsigned int ip_set;        /* current setting (0-ffff)		           */
-		unsigned int ip_set_alt;    /* static alt setting if flag              */
-		unsigned int ip_set_flag;   /* static alt setting if varptr goes true  */
+EXTERN struct {
+  unsigned int channel;       /* DAC channel 							   */
+  unsigned int ip_set;        /* current setting (0-ffff)		           */
+  unsigned int ip_set_alt;    /* static alt setting if flag              */
+  unsigned int ip_set_flag;   /* static alt setting if varptr goes true  */
 				  
-		unsigned int ip_set_max;    /* factory maximum setting (0-ffff) 	   */
-		unsigned int ip_set_min;    /* factory minimum setting (0-ffff) 	   */
+  unsigned int ip_set_max;    /* factory maximum setting (0-ffff) 	   */
+  unsigned int ip_set_min;    /* factory minimum setting (0-ffff) 	   */
 
-		unsigned int need_update; 
+  unsigned int need_update; 
 
-	} analog_sets[ANALOG_SET_SIZE]
+} analog_sets[ANALOG_SET_SIZE]
 #ifdef ISMAIN
-	= {	  {0,  0, 0, 0,   0xffff, 0,   0},
-		  {1,  0, 0, 0,   0xffff, 0,   0},
-		  {2,  0, 0, 0,   0xffff, 0,   0},
-		  {3,  0, 0, 0,   0xffff, 0,   0},
-		  {4,  0, 0, 0,   0xffff, 0,   0},
-		  {5,  0, 0, 0,   0xffff, 0,   0},
-		  {6,  0, 0, 0,   0xffff, 0,   0},
-		  {7,  0, 0, 0,   0xffff, 0,   0},
+= {	  {0,  0, 0, 0,   0xffff, 0,   0},
+	  {1,  0, 0, 0,   0xffff, 0,   0},
+	  {2,  0, 0, 0,   0xffff, 0,   0},
+	  {3,  0, 0, 0,   0xffff, 0,   0},
+	  {4,  0, 0, 0,   0xffff, 0,   0},
+	  {5,  0, 0, 0,   0xffff, 0,   0},
+	  {6,  0, 0, 0,   0xffff, 0,   0},
+	  {7,  0, 0, 0,   0xffff, 0,   0},
 		  
-	}
+}
 #endif
-	;
+    ;
 
 extern void FaultEk(unsigned state);
 extern void FaultEf(unsigned state);
@@ -471,54 +471,54 @@ extern unsigned char AreAnyReferenceNotConfigured(void);
 
 // analog read pointers
 enum {
-   ANA_RD_EK = 0,
-   ANA_RD_IKA,
-   ANA_RD_IKP,
-   ANA_RD_EF,
-   ANA_RD_IF,
-   ANA_RD_EG, // grid V
-   ANA_RD_EC, // bias V
-   ANA_RD_24V, // 24DC
-   ANA_RD_TEMP, // temperature
+  ANA_RD_EK = 0,
+  ANA_RD_IKA,
+  ANA_RD_IKP,
+  ANA_RD_EF,
+  ANA_RD_IF,
+  ANA_RD_EG, // grid V
+  ANA_RD_EC, // bias V
+  ANA_RD_24V, // 24DC
+  ANA_RD_TEMP, // temperature
    
-   ANA_RD_HTR_WARMUP,
-   ANA_RD_WATCHDOG,
-   ANA_RD_ARC,
-   ANA_RD_OT,
-   ANA_RD_PW_DUTY,
-   ANA_RD_BIASFLT,
-   ANA_RD_DA_FDBK,
+  ANA_RD_HTR_WARMUP,
+  ANA_RD_WATCHDOG,
+  ANA_RD_ARC,
+  ANA_RD_OT,
+  ANA_RD_PW_DUTY,
+  ANA_RD_BIASFLT,
+  ANA_RD_DA_FDBK,
 };
 
- EXTERN	struct {
-	    unsigned int channel;	/* ADC channel 							       */
-		unsigned int read_cur;  /* current reading                             */
+EXTERN	struct {
+  unsigned int channel;	/* ADC channel 							       */
+  unsigned int read_cur;  /* current reading                             */
 
-		unsigned int read_cnt;  /* how many readings taken                     */
-		unsigned int read_err;  /* how many errors                             */
+  unsigned int read_cnt;  /* how many readings taken                     */
+  unsigned int read_err;  /* how many errors                             */
 
-		unsigned int read_f_lo; /* low end fault level                         */
-		unsigned int read_f_hi; /* high end fault level                        */
-		unsigned int read_m_lo; /* lo end mask   0 off   1 on   2 trip         */
-		unsigned int read_m_hi; /* hi end mask   0 off   1 on   2 trip         */
-		unsigned int events;
-		void (*fault_vect)(unsigned state);
+  unsigned int read_f_lo; /* low end fault level                         */
+  unsigned int read_f_hi; /* high end fault level                        */
+  unsigned int read_m_lo; /* lo end mask   0 off   1 on   2 trip         */
+  unsigned int read_m_hi; /* hi end mask   0 off   1 on   2 trip         */
+  unsigned int events;
+  void (*fault_vect)(unsigned state);
 
-	} analog_reads[ANALOG_READ_SIZE]
+} analog_reads[ANALOG_READ_SIZE]
 #ifdef ISMAIN			
-	= {	 {0,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEk  }, 
-		 {1,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
-		 {2,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
-		 {3,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEf  }, 
-		 {4,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultIf  }, 
-		 {5,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEg  }, 
-		 {6,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEc  }, 
-		 {7,  0, 0, 0,    0, 0xfff, 0,  0, 0, Fault24v }, 
-		 {8,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
+= {	 {0,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEk  }, 
+	 {1,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
+	 {2,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
+	 {3,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEf  }, 
+	 {4,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultIf  }, 
+	 {5,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEg  }, 
+	 {6,  0, 0, 0,    0, 0xfff, 0,  0, 0, FaultEc  }, 
+	 {7,  0, 0, 0,    0, 0xfff, 0,  0, 0, Fault24v }, 
+	 {8,  0, 0, 0,    0, 0xfff, 0,  0, 0, 0        }, 
 
-	}
+}
 #endif
-	;
+    ;
 
 
 #ifdef USE_ENGINEERING_UNIT_ON_GUN_DRIVER 
@@ -526,45 +526,45 @@ enum {
 #define CAN_SCALE_TABLE_SIZE  13
 // analog read pointers
 enum {
-   CAN_RD_EK = 0,
-//   CAN_RD_IKA,
-   CAN_RD_IKP,
-   CAN_RD_EF,
-   CAN_RD_IF,
-   CAN_RD_EG, // grid V
-   CAN_RD_EC, // bias V
- //  CAN_RD_24V, // 24DC
-   CAN_RD_TEMP, // temperature
+  CAN_RD_EK = 0,
+  //   CAN_RD_IKA,
+  CAN_RD_IKP,
+  CAN_RD_EF,
+  CAN_RD_IF,
+  CAN_RD_EG, // grid V
+  CAN_RD_EC, // bias V
+  //  CAN_RD_24V, // 24DC
+  CAN_RD_TEMP, // temperature
    
-   CAN_RD_EKSET,
-   CAN_RD_EFSET,
-   CAN_RD_EGSET,
-   CAN_SET_EKSET,
-   CAN_SET_EFSET,
-   CAN_SET_EGSET,
+  CAN_RD_EKSET,
+  CAN_RD_EFSET,
+  CAN_RD_EGSET,
+  CAN_SET_EKSET,
+  CAN_SET_EFSET,
+  CAN_SET_EGSET,
    
 };
 /*
-Name 	      |   cal factor | offset|	CAN Interface |	CAN Unit/bit |	CAN Range|	CAN Scaling| ScaleFactor |Scale Offset
---------------------------------------------------------------------------------------------------------------------------
-EK_RD		  |	  0.005555	 | 0	 |	1 V/bit	      |  0.001		 |	65.535	 |	5.555	   | 22753 		 | 0
-IKA_RD		  |	  0.001667	 | 0	 |	1 mA/bit	  |  0.001		 |	65.535	 |	1.667	   | 54624 		 | 0
-IKP_RD		  |	  0.277		 | 0	 |	100 mA/bit    |    0.1		 |	6553.5	 |	2.77	   | 11345 		 | 0
-EF_RD		  |	  0.00222	 | 0	 |	1 mV/bit	  |  0.001		 |	65.535	 |	2.22	   | 9093  		 | 0
-IF_RD		  |	  0.001667	 | 0	 |	10 mA/bit	  |  0.001		 |	65.535	 |	1.667	   | 54624 		 | 0
-EG_RD		  |	  0.1111	 | 80	 |   100 mV/bit	  |    0.1		 |	6553.5	 |	1.111	   | 36405 		 | 0
-EC_RD		  |	  0.05555	 | 0	 |	100 mV/bit    |    0.1		 |	6553.5	 |	0.5555	   | 18202 		 | 0
-TEMP_RD		  |	  0.0133	 | 0	 |	0.01 C/bit    |   0.01		 |	655.35	 |	1.33	   | 43581 		 | 0
-			  |				 |		 |				  |				 |		  	 |			   |	   		 |	
-Ekset bits-val|	  0.0003333	 | 0	 |	1 V/bit	      |  0.001		 |	65.535	 |	0.3333	   | 10921 		 | 0
-Ekset val-bits|				 |		 |				  |				 |		  	 |	3.00030003 | 12289 		 | 0
-Efset bits-val|	  0.000133	 | 0	 |	10 mV/bit	  |  0.001		 |	65.535	 |	0.133	   | 4358  		 | 0
-Efset val-bits|				 |		 |				  |				 |		  	 |	7.518796992| 30796 		 | 0
-Egset bits-val|	  0.00666	 | 80	 |   100 mV/bit	  |    0.1		 |	6553.5	 |	0.0666	   | 2182  		 | 0
-Egset val-bits|				 |		 |				  |				 |			 |	15.01501502| 61501 		 | 0  
+  Name 	      |   cal factor | offset|	CAN Interface |	CAN Unit/bit |	CAN Range|	CAN Scaling| ScaleFactor |Scale Offset
+  --------------------------------------------------------------------------------------------------------------------------
+  EK_RD		  |	  0.005555	 | 0	 |	1 V/bit	      |  0.001		 |	65.535	 |	5.555	   | 22753 		 | 0
+  IKA_RD		  |	  0.001667	 | 0	 |	1 mA/bit	  |  0.001		 |	65.535	 |	1.667	   | 54624 		 | 0
+  IKP_RD		  |	  0.277		 | 0	 |	100 mA/bit    |    0.1		 |	6553.5	 |	2.77	   | 11345 		 | 0
+  EF_RD		  |	  0.00222	 | 0	 |	1 mV/bit	  |  0.001		 |	65.535	 |	2.22	   | 9093  		 | 0
+  IF_RD		  |	  0.001667	 | 0	 |	10 mA/bit	  |  0.001		 |	65.535	 |	1.667	   | 54624 		 | 0
+  EG_RD		  |	  0.1111	 | 80	 |   100 mV/bit	  |    0.1		 |	6553.5	 |	1.111	   | 36405 		 | 0
+  EC_RD		  |	  0.05555	 | 0	 |	100 mV/bit    |    0.1		 |	6553.5	 |	0.5555	   | 18202 		 | 0
+  TEMP_RD		  |	  0.0133	 | 0	 |	0.01 C/bit    |   0.01		 |	655.35	 |	1.33	   | 43581 		 | 0
+  |				 |		 |				  |				 |		  	 |			   |	   		 |	
+  Ekset bits-val|	  0.0003333	 | 0	 |	1 V/bit	      |  0.001		 |	65.535	 |	0.3333	   | 10921 		 | 0
+  Ekset val-bits|				 |		 |				  |				 |		  	 |	3.00030003 | 12289 		 | 0
+  Efset bits-val|	  0.000133	 | 0	 |	10 mV/bit	  |  0.001		 |	65.535	 |	0.133	   | 4358  		 | 0
+  Efset val-bits|				 |		 |				  |				 |		  	 |	7.518796992| 30796 		 | 0
+  Egset bits-val|	  0.00666	 | 80	 |   100 mV/bit	  |    0.1		 |	6553.5	 |	0.0666	   | 2182  		 | 0
+  Egset val-bits|				 |		 |				  |				 |			 |	15.01501502| 61501 		 | 0  
 
 
-Note:  Scale offset for EG read/set is handled by GUI.
+  Note:  Scale offset for EG read/set is handled by GUI.
 			  
 */			  
 
@@ -597,31 +597,31 @@ Note:  Scale offset for EG read/set is handled by GUI.
 					 
 
 
- EXTERN	struct {
-	  // -------- These are used to calibrate and scale the ADC Reading to Engineering Units ---------
-	  unsigned int fixed_scale;
-	  signed int   fixed_offset;
+EXTERN	struct {
+  // -------- These are used to calibrate and scale the ADC Reading to Engineering Units ---------
+  unsigned int fixed_scale;
+  signed int   fixed_offset;
 
-	} CAN_scale_table[CAN_SCALE_TABLE_SIZE]
+} CAN_scale_table[CAN_SCALE_TABLE_SIZE]
 #ifdef ISMAIN			
-	= {	 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0},
+= {	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0},
 		  
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
-		 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
+	 {0, 0}, 
 
-	}
+}
 #endif
-	;
+    ;
 
 #endif /* USE_ENGINEERING_UNIT_ON_GUN_DRIVER */
 
@@ -659,52 +659,52 @@ Note:  Scale offset for EG read/set is handled by GUI.
 
 
 
- EXTERN  struct {
-	    unsigned int state;                 /* fault input state                */
-		unsigned int mask;                  /* 0 = disabled  -  1 = enabled     */
+EXTERN  struct {
+  unsigned int state;                 /* fault input state                */
+  unsigned int mask;                  /* 0 = disabled  -  1 = enabled     */
 
-	    unsigned int from_adc;              /* 1: from ADC, 0: from FPGA ID     */
-	    unsigned int bits;                   /* bit position */
-	    unsigned int fre;                   /* how many events have to happen   */
-	                                        /* 0 = do next. 1 = one free        */
-	    unsigned int left;                  /* how many events left.            */
+  unsigned int from_adc;              /* 1: from ADC, 0: from FPGA ID     */
+  unsigned int bits;                   /* bit position */
+  unsigned int fre;                   /* how many events have to happen   */
+  /* 0 = do next. 1 = one free        */
+  unsigned int left;                  /* how many events left.            */
 
-	    unsigned int fault_latched;         /* fault was latched, need send RESET to FPGA board  */
-		unsigned int action_code;           /* 0: no action, update the bit, 1: htr off, 2: hv off, 3: pulsetop off, 4: trig off, 99: ignore the bit */
+  unsigned int fault_latched;         /* fault was latched, need send RESET to FPGA board  */
+  unsigned int action_code;           /* 0: no action, update the bit, 1: htr off, 2: hv off, 3: pulsetop off, 4: trig off, 99: ignore the bit */
 
 
-	} digi_reads[FAULT_SIZE]
-	#ifdef ISMAIN                       /* if main initialise the table */
-	= {	
-		{0, 0,   1, 0,  1,   0,    0, 99},	// htr/warmup fault
-		{0, 0,   1, 1,  1,   0,    1, 1},	// fpga watchdog fault
-		{0, 0,   1, 2,  1,   0,    0, 2},	// arc fault
-		{0, 0,   1, 3,  1,   0,    0, 99},	// overtemp fault
-		{0, 0,   1, 4,  1,   0,    0, 99},	// pw/duty fault
-		{0, 0,   1, 5,  1,   0,    0, 99},	// bias or top fault
+} digi_reads[FAULT_SIZE]
+#ifdef ISMAIN                       /* if main initialise the table */
+= {	
+  {0, 0,   1, 0,  1,   0,    0, 99},	// htr/warmup fault
+  {0, 0,   1, 1,  1,   0,    1, 1},	// fpga watchdog fault
+  {0, 0,   1, 2,  1,   0,    0, 2},	// arc fault
+  {0, 0,   1, 3,  1,   0,    0, 99},	// overtemp fault
+  {0, 0,   1, 4,  1,   0,    0, 99},	// pw/duty fault
+  {0, 0,   1, 5,  1,   0,    0, 99},	// bias or top fault
 														   
-		{0, 0,   0, 0,  1,   0,    0, 99},  // arc count > 0 			   
-		{0, 0,   0, 1,  1,   0,    0, 99}, 	// arc HV inh active			   
-		{0, 0,   0, 2,  1,   0,    0, 99},  // heater volt < 4.5V
-		{0, 0,   0, 3,  1,   0,    0, 99},	// max temp > 65c
-		{0, 0,   0, 4,  1,   0,    1, 1},	// max temp > 75c
-		{0, 0,   0, 5,  1,   0,    0, 99},	// pulse width limiting
-		{0, 0,   0, 6,  1,   0,    0, 2},	// prf fault
-		{0, 0,   0, 7,  1,   0,    0, 2},	// current pw fault
+  {0, 0,   0, 0,  1,   0,    0, 99},  // arc count > 0 			   
+  {0, 0,   0, 1,  1,   0,    0, 99}, 	// arc HV inh active			   
+  {0, 0,   0, 2,  1,   0,    0, 99},  // heater volt < 4.5V
+  {0, 0,   0, 3,  1,   0,    0, 99},	// max temp > 65c
+  {0, 0,   0, 4,  1,   0,    1, 1},	// max temp > 75c
+  {0, 0,   0, 5,  1,   0,    0, 99},	// pulse width limiting
+  {0, 0,   0, 6,  1,   0,    0, 2},	// prf fault
+  {0, 0,   0, 7,  1,   0,    0, 2},	// current pw fault
 
-		{0, 0,   0, 8,  1,   0,    1, 1},	// grid module hw fault
-		{0, 0,   0, 9,  1,   0,    1, 1},	// grid module o/v fault
-		{0, 0,   0, 10, 1,   0,    1, 1},	// grid module u/v fault
-		{0, 0,   0, 11, 1,   0,    1, 1},	// grid module biasV fault
-		{0, 0,   0, 12, 1,   0,    0, 99},	// hv regulation fault
-		{0, 0,   0, 13, 1,   0,    0, 99},	// dip sw1 on
-		{0, 0,   0, 14, 1,   0,    0, 99},	// test mode switch on
-		{0, 0,   0, 15, 1,   0,    0, 99},	// local mode switch on
+  {0, 0,   0, 8,  1,   0,    1, 1},	// grid module hw fault
+  {0, 0,   0, 9,  1,   0,    1, 1},	// grid module o/v fault
+  {0, 0,   0, 10, 1,   0,    1, 1},	// grid module u/v fault
+  {0, 0,   0, 11, 1,   0,    1, 1},	// grid module biasV fault
+  {0, 0,   0, 12, 1,   0,    0, 99},	// hv regulation fault
+  {0, 0,   0, 13, 1,   0,    0, 99},	// dip sw1 on
+  {0, 0,   0, 14, 1,   0,    0, 99},	// test mode switch on
+  {0, 0,   0, 15, 1,   0,    0, 99},	// local mode switch on
 
 
-	}
-	#endif
-	;
+}
+#endif
+    ;
 
 /*
   --- LOGIC  STATE DEFINITIONS ---
@@ -740,7 +740,7 @@ Note:  Scale offset for EG read/set is handled by GUI.
 
 
 /* 
-  --- SYSTEM STATE BYTE DEFINITIONS --- 
+   --- SYSTEM STATE BYTE DEFINITIONS --- 
 */
 #define SYS_BYTE_HTR_ON						 0x01
 #define SYS_BYTE_LOGIC_READY  				 0x02
@@ -794,77 +794,77 @@ extern void ResetFPGA(void);
   --- Gobal Variales ---
 */
 #ifdef ISMAIN
-	unsigned char control_state;
-	unsigned char last_control_state = STATE_START_UP;	
-    unsigned char system_byte;
+unsigned char control_state;
+unsigned char last_control_state = STATE_START_UP;	
+unsigned char system_byte;
 
-	unsigned int led_pulse_count;
-	unsigned int htd_timer_in_100ms;
-	unsigned int software_skip_warmup = 0;
+unsigned int led_pulse_count;
+unsigned int htd_timer_in_100ms;
+unsigned int software_skip_warmup = 0;
 
-	unsigned int fpga_ASDR;
-	unsigned int faults_from_ADC;
+unsigned int fpga_ASDR;
+unsigned int faults_from_ADC;
 
- 	unsigned long read_cycles_in_2s = 0;	// how fast is the updating speed
+unsigned long read_cycles_in_2s = 0;	// how fast is the updating speed
 
-    unsigned int ekuv_timeout_10ms = 0;
+unsigned int ekuv_timeout_10ms = 0;
 
-    unsigned int ek_ref_changed_timer_10ms = 0;   // mask Ek faults when ref is changed
-	unsigned int ef_ref_changed_timer_10ms = 0;   // mask Ef, If faults when ref is changed
-	unsigned int eg_ref_changed_timer_10ms = 0;   // mask Eg fault when ref is changed
+unsigned int ek_ref_changed_timer_10ms = 0;   // mask Ek faults when ref is changed
+unsigned int ef_ref_changed_timer_10ms = 0;   // mask Ef, If faults when ref is changed
+unsigned int eg_ref_changed_timer_10ms = 0;   // mask Eg fault when ref is changed
 
-	unsigned char htr_OVOC_count = 0;   // for auto-reset htr OVOC feature
-	unsigned int  htr_OVOC_rest_delay_timer_10ms = 0;	  // after OVOC fault, rest for a few seconds before turning htr on
-	unsigned char htr_OVOC_auto_reset_disable = 0;        // if other system fault happens, disable htr OVOC auto-reset
+unsigned char htr_OVOC_count = 0;   // for auto-reset htr OVOC feature
+unsigned int  htr_OVOC_rest_delay_timer_10ms = 0;	  // after OVOC fault, rest for a few seconds before turning htr on
+unsigned char htr_OVOC_auto_reset_disable = 0;        // if other system fault happens, disable htr OVOC auto-reset
 
 //	BUFFER64BYTE uart1_input_buffer;
 //	BUFFER64BYTE uart1_output_buffer;
 
-	volatile unsigned int lvdinterrupt_counter = 0;
+volatile unsigned int lvdinterrupt_counter = 0;
 
-	volatile unsigned int _PERSISTENT last_known_action;
-	volatile unsigned int _PERSISTENT last_osccon;
+volatile unsigned int _PERSISTENT last_known_action;
+volatile unsigned int _PERSISTENT last_osccon;
 
-	unsigned int _PERSISTENT processor_crash_count;
-	unsigned int previous_last_action;
+unsigned int _PERSISTENT processor_crash_count;
+unsigned int previous_last_action;
 
-    unsigned long hw_version_data;
+unsigned long hw_version_data;
 #else
-	extern unsigned char control_state;
-	extern unsigned char last_control_state;
-    extern unsigned char system_byte;
+extern unsigned char control_state;
+extern unsigned char last_control_state;
+extern unsigned char system_byte;
 
-	extern unsigned int led_pulse_count;
-	extern unsigned int htd_timer_in_100ms;
-	extern unsigned int software_skip_warmup;	
+extern unsigned int led_pulse_count;
+extern unsigned int htd_timer_in_100ms;
+extern unsigned int software_skip_warmup;	
 
-	extern unsigned int fpga_ASDR;
-	extern unsigned int faults_from_ADC;
+extern unsigned int fpga_ASDR;
+extern unsigned int faults_from_ADC;
 
-	extern unsigned long read_cycles_in_2s;
+extern unsigned long read_cycles_in_2s;
  
-    extern unsigned int ekuv_timeout_10ms;
+extern unsigned int ekuv_timeout_10ms;
 
-    extern unsigned int ek_ref_changed_timer_10ms;   // mask Ek faults when ref is changed
-	extern unsigned int ef_ref_changed_timer_10ms;   // mask Ef, If faults when ref is changed
-	extern unsigned int eg_ref_changed_timer_10ms;   // mask Eg fault when ref is changed
+extern unsigned int ek_ref_changed_timer_10ms;   // mask Ek faults when ref is changed
+extern unsigned int ef_ref_changed_timer_10ms;   // mask Ef, If faults when ref is changed
+extern unsigned int eg_ref_changed_timer_10ms;   // mask Eg fault when ref is changed
 
-	extern unsigned char htr_OVOC_count;                  // for auto-reset htr OVOC feature
-	extern unsigned int  htr_OVOC_rest_delay_timer_10ms;  // after OVOC fault, rest for a few seconds before turning htr on
-	extern unsigned char htr_OVOC_auto_reset_disable;     // if other system fault happens, disable htr OVOC auto-reset
+extern unsigned char htr_OVOC_count;                  // for auto-reset htr OVOC feature
+extern unsigned int  htr_OVOC_rest_delay_timer_10ms;  // after OVOC fault, rest for a few seconds before turning htr on
+extern unsigned char htr_OVOC_auto_reset_disable;     // if other system fault happens, disable htr OVOC auto-reset
 
 //	extern BUFFER64BYTE uart1_input_buffer;
 //	extern BUFFER64BYTE uart1_output_buffer;
 
-	extern volatile unsigned int lvdinterrupt_counter;
+extern volatile unsigned int lvdinterrupt_counter;
 
-	extern volatile unsigned int _PERSISTENT last_known_action;
-	extern volatile unsigned int _PERSISTENT last_osccon;
+extern volatile unsigned int _PERSISTENT last_known_action;
+extern volatile unsigned int _PERSISTENT last_osccon;
 
-	extern unsigned int _PERSISTENT processor_crash_count;
-	extern unsigned int previous_last_action;
+extern unsigned int _PERSISTENT processor_crash_count;
+extern unsigned int previous_last_action;
 
-	extern  unsigned long hw_version_data;
+extern  unsigned long hw_version_data;
 
 #endif
 

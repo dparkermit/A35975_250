@@ -29,10 +29,10 @@ void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit);
 
   1) It can be totally ignored (This is the default behavior - If the warning mask & the fault mask are NOT set)
   2) It can cause a fault  (This is set by the fault MASK)
-     There are no "warm" or "cold" faults.  Any fault in state warm_ready or hv_on will go to state warm fault.
-     If the fault is still active in the warm state fault then it will move to cold fault.
+  There are no "warm" or "cold" faults.  Any fault in state warm_ready or hv_on will go to state warm fault.
+  If the fault is still active in the warm state fault then it will move to cold fault.
   3) It can cause a latched warning (This is set the warning MASK)
-     NOTE: the warning register is independent of the fault mask.  To be latched as a warning, the fault input MUST BE IN THE WARNING REGISTER
+  NOTE: the warning register is independent of the fault mask.  To be latched as a warning, the fault input MUST BE IN THE WARNING REGISTER
   4) Special state at startup to handle board level failures . . . ????
 */
 
@@ -65,7 +65,7 @@ void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit);
   Faults like magnetron_heater_over_current - The limit is compared to the filtered data in RAM every time, even though the filtered data in ram is only update once every 10mS
   The fault status register is then compared to the masks to generate the warnings and faults.
 
- */
+*/
 
 /* ----------------------FAULT MANAGEMENT ----------------------*/
 
@@ -95,11 +95,11 @@ void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit);
   The following steps occur
   1) Status registers are reset to zero
   2) The input condition is tested, if it is a "logical fault" then (record_this_xxxxx_fault) is called which does the following
-    a) Sets the appropriate bit in the status register
-    b) If the bit matches the fault_mask, 
-       ^ The appropriate bit in the fault register is set
-       ^ The fault is added to the error log - TO BE IMPLEMENTED
-    c) If the bit matches the warning_mask, the appropriate bit in the warning register is set 
+  a) Sets the appropriate bit in the status register
+  b) If the bit matches the fault_mask, 
+  ^ The appropriate bit in the fault register is set
+  ^ The fault is added to the error log - TO BE IMPLEMENTED
+  c) If the bit matches the warning_mask, the appropriate bit in the warning register is set 
   
   STEP 2 is repeated for all fault conditions.
 
@@ -128,34 +128,34 @@ void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit);
 // 1: htr off, 2: hv off, 3: pulsetop off, 4: trig off, otherwise, no action
 //
 void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_reset) {
-	switch (type) {
-	case 1:
-    	LogicHeaterControl(0);
-        if (disable_htr_auto_reset) {
-        	htr_OVOC_auto_reset_disable = 1;
- 	 //		htr_OVOC_count = 0;
-        }
-     //   if (control_state < 0x80) last_control_state = control_state;
-        control_state = STATE_FAULT_COLD_FAULT;
-    	break;
-	case 2:
-		LogHvControl(0);
+  switch (type) {
+  case 1:
+    LogicHeaterControl(0);
+    if (disable_htr_auto_reset) {
+      htr_OVOC_auto_reset_disable = 1;
+      //		htr_OVOC_count = 0;
+    }
+    //   if (control_state < 0x80) last_control_state = control_state;
+    control_state = STATE_FAULT_COLD_FAULT;
+    break;
+  case 2:
+    LogHvControl(0);
     //    if (control_state < 0x80) last_control_state = control_state;
-        control_state = STATE_FAULT_HOT_FAULT;
-    	break;
-	case 3:
-		LogPulsetopControl(0);
+    control_state = STATE_FAULT_HOT_FAULT;
+    break;
+  case 3:
+    LogPulsetopControl(0);
     //    if (control_state < 0x80) last_control_state = control_state;
-        control_state = STATE_FAULT_HOT_FAULT;
-    	break;
-	case 4:
-		LogTrigControl(0);
-     //   if (control_state < 0x80) last_control_state = control_state;
-        control_state = STATE_FAULT_HOT_FAULT;
-    	break;
-	default:
-    	break;
-   }
+    control_state = STATE_FAULT_HOT_FAULT;
+    break;
+  case 4:
+    LogTrigControl(0);
+    //   if (control_state < 0x80) last_control_state = control_state;
+    control_state = STATE_FAULT_HOT_FAULT;
+    break;
+  default:
+    break;
+  }
    
 }   
 /////////////////////////////////////////////////////////////////////////
@@ -164,88 +164,88 @@ void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_reset) {
 //
 void DoFaultRecord(unsigned int fault_type, unsigned int fault_bit) {
    
-    unsigned idx;		    
+  unsigned idx;		    
 																		     
-	switch (fault_type) {
+  switch (fault_type) {
     												  
-	case FAULTS_TYPE_SYSTEM_CONTROL:    
-    	if ((faults_reg_system_control & fault_bit) == 0) {
-    		faults_reg_system_control |= fault_bit;	
-            // action
-            DoFaultAction(1, 1);
+  case FAULTS_TYPE_SYSTEM_CONTROL:    
+    if ((faults_reg_system_control & fault_bit) == 0) {
+      faults_reg_system_control |= fault_bit;	
+      // action
+      DoFaultAction(1, 1);
             
-           if (fault_bit & (FAULTS_SYS_FPGAID |	FAULTS_SYS_FPGA_WATCHDOG_ERR)) 
-           		_FAULT_GD_FPGA_COMM_LOST = 1;
-        }			   	
-        break;												   
+      if (fault_bit & (FAULTS_SYS_FPGAID |	FAULTS_SYS_FPGA_WATCHDOG_ERR)) 
+	_FAULT_GD_FPGA_COMM_LOST = 1;
+    }			   	
+    break;												   
 	
-    case FAULTS_TYPE_SOFTWARE:
-    	if ((faults_reg_software & fault_bit) == 0) {
-    		faults_reg_software |= fault_bit;	
-            // action
-        }			   	
-        break;
-	
-    case FAULTS_TYPE_DIGI_FROM_FPGAID:
-#ifndef TEST_BYP_FPGA_FAULTS
-    	if ((faults_reg_digi_from_gd_fpgaid & fault_bit) == 0) {
-    		faults_reg_digi_from_gd_fpgaid |= fault_bit;
-            // action
-             if (fault_bit == 0x0002 || fault_bit == 0x0004) {  // wdog and arc faults from ADC
-             	 if (fault_bit > 2)  _FAULT_GD_FPGA_ARC_FAULT = 1;
-                 else				 _FAULT_GD_FPGA_COMM_LOST = 1;
-                 
-                 idx = (fault_bit >> 1);
-                 DoFaultAction(digi_reads[idx].action_code, 1);
-            }
-            else { 
-            	for (idx = 0; idx < 15; idx++) {
-                	if (fault_bit == (1 << idx)) break;
-                }
-                if (idx < 15) {	// found the index
-                    idx += DIGI_ID_ARC_COUNT;
-                    switch (idx) {
-                    case DIGI_ID_TEMP_75C:
-                    	_FAULT_GD_FPGA_TEMP_75C = 1;
-                    	break;
-                    case DIGI_ID_PRF:
-                    case DIGI_ID_CURR_PW:
-                    	_FAULT_GD_FPGA_PULSE_FAULT = 1;
-                    	break;
- 
-                    case DIGI_ID_GRID_HW:
-                    case DIGI_ID_GRID_OV:
-                    case DIGI_ID_GRID_UV:
-                    case DIGI_ID_BIAS_V:
-                    	_FAULT_GD_FPGA_GRID_FAULT = 1;
-                    	break;
-
-                    default:
-                    	break;
-
-                    }
-
-                    DoFaultAction(digi_reads[idx].action_code, 1);
-                }
-            }
-        }
-#endif        			   	
-        break;
-	
-    default:
+  case FAULTS_TYPE_SOFTWARE:
+    if ((faults_reg_software & fault_bit) == 0) {
+      faults_reg_software |= fault_bit;	
+      // action
+    }			   	
     break;
-    }        
-		
-    if (faults_reg_system_control || faults_reg_software || (faults_reg_digi_from_gd_fpgaid & FPGAID_FAULTS_MASK))	{
-    	PIN_LED_SUM_FAULT = OLL_LED_ON; 
-        system_byte |= SYS_BYTE_FAULT_ACTIVE; 
-        _FAULT_GD_SUM_FAULT = 1;       
-    }     
-    else {
-     	PIN_LED_SUM_FAULT = !OLL_LED_ON;  
-        system_byte &= ~SYS_BYTE_FAULT_ACTIVE;
-        _FAULT_GD_SUM_FAULT = 0;        
+	
+  case FAULTS_TYPE_DIGI_FROM_FPGAID:
+#ifndef TEST_BYP_FPGA_FAULTS
+    if ((faults_reg_digi_from_gd_fpgaid & fault_bit) == 0) {
+      faults_reg_digi_from_gd_fpgaid |= fault_bit;
+      // action
+      if (fault_bit == 0x0002 || fault_bit == 0x0004) {  // wdog and arc faults from ADC
+	if (fault_bit > 2)  _FAULT_GD_FPGA_ARC_FAULT = 1;
+	else				 _FAULT_GD_FPGA_COMM_LOST = 1;
+                 
+	idx = (fault_bit >> 1);
+	DoFaultAction(digi_reads[idx].action_code, 1);
+      }
+      else { 
+	for (idx = 0; idx < 15; idx++) {
+	  if (fault_bit == (1 << idx)) break;
+	}
+	if (idx < 15) {	// found the index
+	  idx += DIGI_ID_ARC_COUNT;
+	  switch (idx) {
+	  case DIGI_ID_TEMP_75C:
+	    _FAULT_GD_FPGA_TEMP_75C = 1;
+	    break;
+	  case DIGI_ID_PRF:
+	  case DIGI_ID_CURR_PW:
+	    _FAULT_GD_FPGA_PULSE_FAULT = 1;
+	    break;
+ 
+	  case DIGI_ID_GRID_HW:
+	  case DIGI_ID_GRID_OV:
+	  case DIGI_ID_GRID_UV:
+	  case DIGI_ID_BIAS_V:
+	    _FAULT_GD_FPGA_GRID_FAULT = 1;
+	    break;
+
+	  default:
+	    break;
+
+	  }
+
+	  DoFaultAction(digi_reads[idx].action_code, 1);
+	}
+      }
     }
+#endif        			   	
+    break;
+	
+  default:
+    break;
+  }        
+		
+  if (faults_reg_system_control || faults_reg_software || (faults_reg_digi_from_gd_fpgaid & FPGAID_FAULTS_MASK))	{
+    PIN_LED_SUM_FAULT = OLL_LED_ON; 
+    system_byte |= SYS_BYTE_FAULT_ACTIVE; 
+    _FAULT_GD_SUM_FAULT = 1;       
+  }     
+  else {
+    PIN_LED_SUM_FAULT = !OLL_LED_ON;  
+    system_byte &= ~SYS_BYTE_FAULT_ACTIVE;
+    _FAULT_GD_SUM_FAULT = 0;        
+  }
         
 }		
 /////////////////////////////////////////////////////////////////////////
@@ -254,34 +254,34 @@ void DoFaultRecord(unsigned int fault_type, unsigned int fault_bit) {
 //
 void DoFaultClear(unsigned int fault_type, unsigned int fault_bit) {		    
 																		     
-	switch (fault_type) {
+  switch (fault_type) {
     												  
-	case FAULTS_TYPE_SYSTEM_CONTROL:
-   		faults_reg_system_control &= ~fault_bit;	
-        break;												   
+  case FAULTS_TYPE_SYSTEM_CONTROL:
+    faults_reg_system_control &= ~fault_bit;	
+    break;												   
 	
-    case FAULTS_TYPE_SOFTWARE:
-   		faults_reg_software &= ~fault_bit;	
-        break;
-	
-    case FAULTS_TYPE_DIGI_FROM_FPGAID:
-   		faults_reg_digi_from_gd_fpgaid &= ~fault_bit;
-        break;
-	
-    default:
+  case FAULTS_TYPE_SOFTWARE:
+    faults_reg_software &= ~fault_bit;	
     break;
-    } 
+	
+  case FAULTS_TYPE_DIGI_FROM_FPGAID:
+    faults_reg_digi_from_gd_fpgaid &= ~fault_bit;
+    break;
+	
+  default:
+    break;
+  } 
     
-    if (faults_reg_system_control || faults_reg_software || (faults_reg_digi_from_gd_fpgaid & FPGAID_FAULTS_MASK))	{
-    	PIN_LED_SUM_FAULT = OLL_LED_ON;
-        system_byte |= SYS_BYTE_FAULT_ACTIVE;        
-        _FAULT_GD_SUM_FAULT = 1;       
-    }      
-    else {
-     	PIN_LED_SUM_FAULT = !OLL_LED_ON;      
-        system_byte &= ~SYS_BYTE_FAULT_ACTIVE;        
-        _FAULT_GD_SUM_FAULT = 0;       
-	}
+  if (faults_reg_system_control || faults_reg_software || (faults_reg_digi_from_gd_fpgaid & FPGAID_FAULTS_MASK))	{
+    PIN_LED_SUM_FAULT = OLL_LED_ON;
+    system_byte |= SYS_BYTE_FAULT_ACTIVE;        
+    _FAULT_GD_SUM_FAULT = 1;       
+  }      
+  else {
+    PIN_LED_SUM_FAULT = !OLL_LED_ON;      
+    system_byte &= ~SYS_BYTE_FAULT_ACTIVE;        
+    _FAULT_GD_SUM_FAULT = 0;       
+  }
 		
 }		
 
@@ -292,90 +292,90 @@ void DoFaultClear(unsigned int fault_type, unsigned int fault_bit) {
 //
 void CheckAnalogLimits(unsigned index) {
 
-    /* test for foo. */
-    if (index < ANALOG_READ_SIZE) {
-		    /* test if over the max */
-		    if (analog_reads[index].read_m_hi &&
- 		        (analog_reads[index].read_cur > analog_reads[index].read_f_hi))	{
+  /* test for foo. */
+  if (index < ANALOG_READ_SIZE) {
+    /* test if over the max */
+    if (analog_reads[index].read_m_hi &&
+	(analog_reads[index].read_cur > analog_reads[index].read_f_hi))	{
 
-		        if (analog_reads[index].read_m_lo > 1)  /*  if low was in service */
-		            analog_reads[index].read_m_lo = 1;   /* reset it               */
+      if (analog_reads[index].read_m_lo > 1)  /*  if low was in service */
+	analog_reads[index].read_m_lo = 1;   /* reset it               */
 
-		        /* faulted once already - trip fault this time */
-		        if (analog_reads[index].read_m_hi == 3){
+      /* faulted once already - trip fault this time */
+      if (analog_reads[index].read_m_hi == 3){
 
-		            analog_reads[index].read_m_hi = 2;       /* set in service mode */
+	analog_reads[index].read_m_hi = 2;       /* set in service mode */
 
-		            if (analog_reads[index].fault_vect)      /* test for vector */
-		                (analog_reads[index].fault_vect)(2); /* call if so send hi signal*/
+	if (analog_reads[index].fault_vect)      /* test for vector */
+	  (analog_reads[index].fault_vect)(2); /* call if so send hi signal*/
 
-		            if (analog_reads[index].read_m_lo == 2)  /*  if low was in service */
-		                analog_reads[index].read_m_lo = 1;   /* reset it               */
+	if (analog_reads[index].read_m_lo == 2)  /*  if low was in service */
+	  analog_reads[index].read_m_lo = 1;   /* reset it               */
 
-		        }
+      }
 
-		        /* if not masked and not in service */
-		        if (analog_reads[index].read_m_hi == 1){
+      /* if not masked and not in service */
+      if (analog_reads[index].read_m_hi == 1){
 
-		            analog_reads[index].read_m_hi = 3;       /* set one free trip */
+	analog_reads[index].read_m_hi = 3;       /* set one free trip */
 
-		            return;
+	return;
 
-		        }
+      }
 
-		    }
+    }
 
-		    /* test if under the min */
-		    else if (analog_reads[index].read_m_lo &&
-		        (analog_reads[index].read_cur < analog_reads[index].read_f_lo)) {
+    /* test if under the min */
+    else if (analog_reads[index].read_m_lo &&
+	     (analog_reads[index].read_cur < analog_reads[index].read_f_lo)) {
 
-		        if (analog_reads[index].read_m_hi > 1)  /*  if hi was in service */
-		            analog_reads[index].read_m_hi = 1;   /* reset it               */
+      if (analog_reads[index].read_m_hi > 1)  /*  if hi was in service */
+	analog_reads[index].read_m_hi = 1;   /* reset it               */
 
-		        /* if TRIP + HAD ONE FREE ALREADY */
-		        if (analog_reads[index].read_m_lo == 3){
+      /* if TRIP + HAD ONE FREE ALREADY */
+      if (analog_reads[index].read_m_lo == 3){
 
-		            analog_reads[index].read_m_lo = 2;       /* set in service mode */
+	analog_reads[index].read_m_lo = 2;       /* set in service mode */
 
-		            if (analog_reads[index].fault_vect)      /* test for vector */
-		                (analog_reads[index].fault_vect)(1); /* call if so send lo signal*/
+	if (analog_reads[index].fault_vect)      /* test for vector */
+	  (analog_reads[index].fault_vect)(1); /* call if so send lo signal*/
 
-		            if (analog_reads[index].read_m_hi == 2)  /*  if hi was in service */
-		                analog_reads[index].read_m_hi = 1;   /* reset it               */
+	if (analog_reads[index].read_m_hi == 2)  /*  if hi was in service */
+	  analog_reads[index].read_m_hi = 1;   /* reset it               */
 
-		        }
+      }
 
-		        /* if not masked and not in service */
-		        if (analog_reads[index].read_m_lo == 1){
+      /* if not masked and not in service */
+      if (analog_reads[index].read_m_lo == 1){
 
-		            analog_reads[index].read_m_lo = 3;       /* set ONE FREE TRIP mode */
+	analog_reads[index].read_m_lo = 3;       /* set ONE FREE TRIP mode */
 
-		            return;
-		        }
+	return;
+      }
 
-		    }
+    }
 		    
-		    /* test for clear                   */
-		    /* could be 2 TRIP or 3 - one time  */
-		    /* one free fault added             */
-		    else if ((analog_reads[index].read_m_hi > 1) || (analog_reads[index].read_m_lo > 1)) {
+    /* test for clear                   */
+    /* could be 2 TRIP or 3 - one time  */
+    /* one free fault added             */
+    else if ((analog_reads[index].read_m_hi > 1) || (analog_reads[index].read_m_lo > 1)) {
 
-		        /* log event - reset happened after only one reading */
-		        if ((analog_reads[index].read_m_hi == 3) || (analog_reads[index].read_m_lo == 3)) 
-		            analog_reads[index].events++;
+      /* log event - reset happened after only one reading */
+      if ((analog_reads[index].read_m_hi == 3) || (analog_reads[index].read_m_lo == 3)) 
+	analog_reads[index].events++;
 
-		        if (analog_reads[index].fault_vect)      /* test for vector */
-		            (analog_reads[index].fault_vect)(0); /* call if so send lo signal*/
+      if (analog_reads[index].fault_vect)      /* test for vector */
+	(analog_reads[index].fault_vect)(0); /* call if so send lo signal*/
 
-		        if (analog_reads[index].read_m_hi)
-		            analog_reads[index].read_m_hi = 1;     /* reset in-services - cleared or masked */
+      if (analog_reads[index].read_m_hi)
+	analog_reads[index].read_m_hi = 1;     /* reset in-services - cleared or masked */
 
-		        if (analog_reads[index].read_m_lo)
-		            analog_reads[index].read_m_lo = 1;         
+      if (analog_reads[index].read_m_lo)
+	analog_reads[index].read_m_lo = 1;         
 
-		    }
+    }
 
-	}  // index < ANALOG_READ_SIZE
+  }  // index < ANALOG_READ_SIZE
 
 
 }
@@ -386,48 +386,48 @@ void CheckAnalogLimits(unsigned index) {
 //
 void FaultEk(unsigned state) {
 
-	unsigned char fault_just_happened = 0;
+  unsigned char fault_just_happened = 0;
     
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
-      if (ekuv_timeout_10ms < 220) {
-      	  if (!ekuv_timeout_10ms) ekuv_timeout_10ms++;
-          if (analog_reads[ANA_RD_EK].read_m_lo > 1) analog_reads[ANA_RD_EK].read_m_lo = 1;
-          break; // no faulting this time
-      }
-      if (ek_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_EK].read_m_lo == 2) analog_reads[ANA_RD_EK].read_m_lo = 1;
-          if (analog_reads[ANA_RD_EK].read_m_hi == 2) analog_reads[ANA_RD_EK].read_m_hi = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      else {
-      	  _FAULT_GD_SW_EK_UV = 1;
-          fault_just_happened = 1;
-      }
-      break;
+  case 1: // under
+    if (ekuv_timeout_10ms < 220) {
+      if (!ekuv_timeout_10ms) ekuv_timeout_10ms++;
+      if (analog_reads[ANA_RD_EK].read_m_lo > 1) analog_reads[ANA_RD_EK].read_m_lo = 1;
+      break; // no faulting this time
+    }
+    if (ek_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_EK].read_m_lo == 2) analog_reads[ANA_RD_EK].read_m_lo = 1;
+      if (analog_reads[ANA_RD_EK].read_m_hi == 2) analog_reads[ANA_RD_EK].read_m_hi = 1;
+      break; // no faulting this time, armed for next time     
+    }
+    else {
+      _FAULT_GD_SW_EK_UV = 1;
+      fault_just_happened = 1;
+    }
+    break;
       	  
-	case 2: // over, and under pass through
-      if (ek_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_EK].read_m_lo == 2) analog_reads[ANA_RD_EK].read_m_lo = 1;
-          if (analog_reads[ANA_RD_EK].read_m_hi == 2) analog_reads[ANA_RD_EK].read_m_hi = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      else {
-      	  _FAULT_GD_SW_EK_OV = 1; 
-          fault_just_happened = 1;
-      }    
-      break;
-      
-	default:
-      ekuv_timeout_10ms = 0;
-      break;
-      
+  case 2: // over, and under pass through
+    if (ek_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_EK].read_m_lo == 2) analog_reads[ANA_RD_EK].read_m_lo = 1;
+      if (analog_reads[ANA_RD_EK].read_m_hi == 2) analog_reads[ANA_RD_EK].read_m_hi = 1;
+      break; // no faulting this time, armed for next time     
     }
-    if (fault_just_happened) {
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EKOV_EKUV);
-      DoFaultAction(2, 0);
-    }
+    else {
+      _FAULT_GD_SW_EK_OV = 1; 
+      fault_just_happened = 1;
+    }    
+    break;
+      
+  default:
+    ekuv_timeout_10ms = 0;
+    break;
+      
+  }
+  if (fault_just_happened) {
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EKOV_EKUV);
+    DoFaultAction(2, 0);
+  }
 
 }
 /////////////////////////////////////////////////////////////////////////
@@ -436,36 +436,36 @@ void FaultEk(unsigned state) {
 //
 void FaultEf(unsigned state) {
 
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
+  case 1: // under
 #ifndef TEST_BYP_FPGA_FAULTS
-      if (ef_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_EF].read_m_lo == 2) analog_reads[ANA_RD_EF].read_m_lo = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      _FAULT_GD_SW_HTR_UV = 1; // QQ: not fault, warning only?
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFUV);
-      DoFaultAction(2, 0);
-#endif
-      break;
-	case 2: // over
-#ifndef TEST_BYP_FPGA_FAULTS
-      if (ef_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_EF].read_m_hi == 2) analog_reads[ANA_RD_EF].read_m_hi = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      _FAULT_GD_SW_HTR_OVOC = 1;
-      htr_OVOC_count++;
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFOV_IFOC);
-      DoFaultAction(1, htr_OVOC_count >= 5? 1 : 0);
-      
-#endif
-      break;
-	default:
-      break;
-      
+    if (ef_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_EF].read_m_lo == 2) analog_reads[ANA_RD_EF].read_m_lo = 1;
+      break; // no faulting this time, armed for next time     
     }
+    _FAULT_GD_SW_HTR_UV = 1; // QQ: not fault, warning only?
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFUV);
+    DoFaultAction(2, 0);
+#endif
+    break;
+  case 2: // over
+#ifndef TEST_BYP_FPGA_FAULTS
+    if (ef_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_EF].read_m_hi == 2) analog_reads[ANA_RD_EF].read_m_hi = 1;
+      break; // no faulting this time, armed for next time     
+    }
+    _FAULT_GD_SW_HTR_OVOC = 1;
+    htr_OVOC_count++;
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFOV_IFOC);
+    DoFaultAction(1, htr_OVOC_count >= 5? 1 : 0);
+      
+#endif
+    break;
+  default:
+    break;
+      
+  }
     
 }
 /////////////////////////////////////////////////////////////////////////
@@ -474,26 +474,26 @@ void FaultEf(unsigned state) {
 //
 void FaultIf(unsigned state) {
 
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
-      break;
-	case 2: // over
+  case 1: // under
+    break;
+  case 2: // over
 #ifndef TEST_BYP_FPGA_FAULTS
-      if (ef_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_IF].read_m_hi == 2) analog_reads[ANA_RD_IF].read_m_hi = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      _FAULT_GD_SW_HTR_OVOC = 1;
-      htr_OVOC_count++;
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFOV_IFOC);
-      DoFaultAction(1, htr_OVOC_count >= 5? 1 : 0);
-#endif
-      break;
-	default:
-      break;
-      
+    if (ef_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_IF].read_m_hi == 2) analog_reads[ANA_RD_IF].read_m_hi = 1;
+      break; // no faulting this time, armed for next time     
     }
+    _FAULT_GD_SW_HTR_OVOC = 1;
+    htr_OVOC_count++;
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EFOV_IFOC);
+    DoFaultAction(1, htr_OVOC_count >= 5? 1 : 0);
+#endif
+    break;
+  default:
+    break;
+      
+  }
     
 }
 /////////////////////////////////////////////////////////////////////////
@@ -502,23 +502,23 @@ void FaultIf(unsigned state) {
 //
 void FaultEg(unsigned state) {
 
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
-      break;
-	case 2: // over
-      if (eg_ref_changed_timer_10ms) {
-          if (analog_reads[ANA_RD_EG].read_m_hi == 2) analog_reads[ANA_RD_EG].read_m_hi = 1;
-          break; // no faulting this time, armed for next time     
-      }
-      _FAULT_GD_SW_GRID_OV = 1;
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EGOV);
-      DoFaultAction(1, 1);
-      break;
-	default:
-      break;
-      
+  case 1: // under
+    break;
+  case 2: // over
+    if (eg_ref_changed_timer_10ms) {
+      if (analog_reads[ANA_RD_EG].read_m_hi == 2) analog_reads[ANA_RD_EG].read_m_hi = 1;
+      break; // no faulting this time, armed for next time     
     }
+    _FAULT_GD_SW_GRID_OV = 1;
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_EGOV);
+    DoFaultAction(1, 1);
+    break;
+  default:
+    break;
+      
+  }
     
 }
 /////////////////////////////////////////////////////////////////////////
@@ -527,19 +527,19 @@ void FaultEg(unsigned state) {
 //
 void FaultEc(unsigned state) {
 
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
-	  _FAULT_GD_SW_BIAS_UV = 1;
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_ECUV);
-      DoFaultAction(1, 1);
-      break;
-	case 2: // over
-      break;
-	default:
-      break;
+  case 1: // under
+    _FAULT_GD_SW_BIAS_UV = 1;
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_ECUV);
+    DoFaultAction(1, 1);
+    break;
+  case 2: // over
+    break;
+  default:
+    break;
       
-    }
+  }
     
 }
 /////////////////////////////////////////////////////////////////////////
@@ -548,18 +548,18 @@ void FaultEc(unsigned state) {
 //
 void Fault24v(unsigned state) {
 
-	switch (state) {
+  switch (state) {
     
-	case 1: // under
-	case 2: // over
-      _FAULT_GD_SW_24V_FAULT = 1;
-      DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_24V);
-      DoFaultAction(2, 0);
-      break;
-	default:
-      break;
+  case 1: // under
+  case 2: // over
+    _FAULT_GD_SW_24V_FAULT = 1;
+    DoFaultRecord(FAULTS_TYPE_SOFTWARE, FAULTS_SW_24V);
+    DoFaultAction(2, 0);
+    break;
+  default:
+    break;
       
-    }
+  }
     
 }
 
@@ -569,25 +569,25 @@ void Fault24v(unsigned state) {
 //
 void SetEfLimits(void) {
 
-	double value, temp;
+  double value, temp;
     
-    value = (double)analog_sets[ANA_SET_EF].ip_set * 0.000133;
-    temp = value * 0.2;
-    if (temp < 0.2) temp = 0.2;
-    temp += value;
-    temp /= 0.00222;
-    if (temp > EF_READ_MAX) temp = EF_READ_MAX;
-    analog_reads[ANA_RD_EF].read_f_hi = (unsigned)temp;
+  value = (double)analog_sets[ANA_SET_EF].ip_set * 0.000133;
+  temp = value * 0.2;
+  if (temp < 0.2) temp = 0.2;
+  temp += value;
+  temp /= 0.00222;
+  if (temp > EF_READ_MAX) temp = EF_READ_MAX;
+  analog_reads[ANA_RD_EF].read_f_hi = (unsigned)temp;
     
 
-    temp = value * 0.15;
-    if (temp < 0.2) temp = 0.2;
-    value -= temp;
-    if (value < 0) value = 0;
-    value /= 0.00222;
-    analog_reads[ANA_RD_EF].read_f_lo = (unsigned)value;
+  temp = value * 0.15;
+  if (temp < 0.2) temp = 0.2;
+  value -= temp;
+  if (value < 0) value = 0;
+  value /= 0.00222;
+  analog_reads[ANA_RD_EF].read_f_lo = (unsigned)value;
     
-	ef_ref_changed_timer_10ms = 220;  // 2.2s
+  ef_ref_changed_timer_10ms = 220;  // 2.2s
 
 }
 
@@ -597,22 +597,22 @@ void SetEfLimits(void) {
 //
 void SetEkLimits(void) {
 
-	double value, offset, temp;
+  double value, offset, temp;
     
-    value = (double)analog_sets[ANA_SET_EK].ip_set * 0.0003333;
-    offset = value * 0.1;
-    if (offset < 0.2) offset = 0.2; // min 200v
+  value = (double)analog_sets[ANA_SET_EK].ip_set * 0.0003333;
+  offset = value * 0.1;
+  if (offset < 0.2) offset = 0.2; // min 200v
  
-    temp = value + offset;
-    temp /= 0.005555;
-    analog_reads[ANA_RD_EK].read_f_hi = (unsigned)temp;
+  temp = value + offset;
+  temp /= 0.005555;
+  analog_reads[ANA_RD_EK].read_f_hi = (unsigned)temp;
     
-    temp = value - offset;
-    if (temp < 0) temp = 0;
-    temp /= 0.005555;
-    analog_reads[ANA_RD_EK].read_f_lo = (unsigned)temp;
+  temp = value - offset;
+  if (temp < 0) temp = 0;
+  temp /= 0.005555;
+  analog_reads[ANA_RD_EK].read_f_lo = (unsigned)temp;
     
-	ek_ref_changed_timer_10ms = 220;  // 2.2s
+  ek_ref_changed_timer_10ms = 220;  // 2.2s
     
 }
 /////////////////////////////////////////////////////////////////////////
@@ -621,21 +621,21 @@ void SetEkLimits(void) {
 //
 void SetEgLimits(void) {
 
-	double value;
+  double value;
     
-    value = (double)analog_sets[ANA_SET_EG].ip_set * 0.00666;
-    value += 10;
-    value /= 0.1111;
-    analog_reads[ANA_RD_EG].read_f_hi = (unsigned)value;
+  value = (double)analog_sets[ANA_SET_EG].ip_set * 0.00666;
+  value += 10;
+  value /= 0.1111;
+  analog_reads[ANA_RD_EG].read_f_hi = (unsigned)value;
 
-	eg_ref_changed_timer_10ms = 220;  // 2.2s    
+  eg_ref_changed_timer_10ms = 220;  // 2.2s    
 
 }
 
 // DPARKER update pulse fault must be called at 10ms Interval or the sections that count "out of range" counts will be arbitrary time lengths
 
 void UpdateFaults(void) {
-  #if 0
+#if 0
   // See h file for documentation
   unsigned int temp_u16int;
 
@@ -763,23 +763,23 @@ void UpdateFaults(void) {
   // Check that the lambda vpeak ADC reading is not greater than X% of its set point (set in Config.h)
   // It must remain outside this range for at least HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT before a fault is generated
   if (hv_lambda_vpeak_adc_reading > hv_lambda_vpeak_adc_over_trip_point) {
-    hv_lambda_vpeak_over_voltage_count++;
+  hv_lambda_vpeak_over_voltage_count++;
   } else if (hv_lambda_vpeak_over_voltage_count >= 1) {
-    hv_lambda_vpeak_over_voltage_count--;
+  hv_lambda_vpeak_over_voltage_count--;
   }
   if (hv_lambda_vpeak_over_voltage_count > HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT) {
-    RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_OVER_VOLTAGE);
+  RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_OVER_VOLTAGE);
   }
 
   // Check that the lambda vpeak ADC reading is not less than X% of its set point (set in Config.h)
   // It must remain outside this range for at least HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT before a fault is generated
   if (hv_lambda_vpeak_adc_reading < hv_lambda_vpeak_adc_under_trip_point) {
-    hv_lambda_vpeak_under_voltage_count++;
+  hv_lambda_vpeak_under_voltage_count++;
   } else if (hv_lambda_vpeak_under_voltage_count >= 1) {
-    hv_lambda_vpeak_under_voltage_count--;
+  hv_lambda_vpeak_under_voltage_count--;
   }
   if (hv_lambda_vpeak_under_voltage_count > HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT) {
-    RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_UNDER_VOLTAGE);
+  RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_UNDER_VOLTAGE);
   }
   */
   
@@ -882,26 +882,26 @@ void UpdateFaults(void) {
   if (PIN_INTERLOCK_4 == ILL_INTERLOCK_OPEN) {
     RecordThisControlBoardFault(FAULT_DIGITAL_INTERLOCK_4);
   }
-  #endif
+#endif
 }
 
 void ResetPulseLatches(void) {
-  #if 0
+#if 0
   PIN_PULSE_LATCH_RESET = OLL_PULSE_LATCH_RESET;
   __delay32(DELAY_PULSE_LATCH_RESET);
   PIN_PULSE_LATCH_RESET = !OLL_PULSE_LATCH_RESET;
-  #endif
+#endif
 }
 
 
 void ResetHWLatches(void) {
 
- #if 0
+#if 0
   // Reset the latches
   PIN_LATCH_RESET = OLL_RESET_LATCH;
   __delay32(DELAY_LATCH_RESET);
   PIN_LATCH_RESET = !OLL_RESET_LATCH;
- #endif
+#endif
 }
 
 void ResetAllFaults(void) {
@@ -943,8 +943,8 @@ void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit) {
 
 
 unsigned int CheckFaultActive(void) {
- // return (faults_control_board_fault_reg | faults_thyratron_fault_reg | faults_magnetron_fault_reg | faults_high_voltage_fault_reg);
-    return (0);
+  // return (faults_control_board_fault_reg | faults_thyratron_fault_reg | faults_magnetron_fault_reg | faults_high_voltage_fault_reg);
+  return (0);
 }
 
 

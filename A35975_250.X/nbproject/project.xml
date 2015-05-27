@@ -5,9 +5,9 @@
             <name>A35975_250</name>
             <creation-uuid>85da1219-79c1-40fa-988d-f4a2e5b77e6a</creation-uuid>
             <make-project-type>0</make-project-type>
-            <c-extensions/>
+            <c-extensions>c</c-extensions>
             <cpp-extensions/>
-            <header-extensions/>
+            <header-extensions>h</header-extensions>
             <asminc-extensions/>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
             <make-dep-projects/>

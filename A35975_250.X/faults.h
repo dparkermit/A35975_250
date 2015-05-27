@@ -13,7 +13,7 @@ typedef struct {
   unsigned int reversescale16bit_saturation;
 } TYPE_DEBUG_COUNTER;
 
-EXTERN TYPE_DEBUG_COUNTER global_debug_counter;
+extern TYPE_DEBUG_COUNTER global_debug_counter;
 
 
 // Simplified Fault List
@@ -94,33 +94,10 @@ EXTERN TYPE_DEBUG_COUNTER global_debug_counter;
 */
 
 
-// ------------------- FAULT REGISTER SET UP --------------------- //
-
-EXTERN unsigned int debug_status_register;
-
-#define STATUS_BOR_RESET                          0x0001 // The processor restarted from a Brown Out Reset 
-#define STATUS_TRAPR_RESET                        0x0002 // The processor restarted from a Trap Reset
-#define STATUS_WDT_RESET                          0x0004 // The processor restarted from a Watch Dog Time Out 
-#define STATUS_IOPUWR_RESET                       0x0008 // The processor restarted from a Illegal Operation Reset
-#define STATUS_POR_RESET                          0x0010 // The processor restarted from a Power On Reset
-#define STATUS_EXTERNAL_RESET                     0x0020 // The processor restarted from an External Reset
-#define STATUS_SOFTARE_RESET                      0x0040 // The processor restarted from a Software Reset
-#define STATUS_DIGITAL_IO_EXP_ERROR               0x0080 // The read/write/read test of one of the IO Expanders failed
-
-#define STATUS_UNUSED_3                           0x0100 
-#define STATUS_UNUSED_4                           0x0200 
-#define STATUS_UNUSED_5                           0x0400 
-#define STATUS_UNUSED_6                           0x0800 
-#define STATUS_UNUSED_7                           0x1000
-#define STATUS_UNUSED_8                           0x2000
-#define STATUS_UNUSED_9                           0x4000
-#define STATUS_UNUSED_10                          0x8000
-
-
 // CONTROL FAULT REGISTER, 3 main types
-EXTERN unsigned int faults_reg_system_control;
-EXTERN unsigned int faults_reg_software;	    
-EXTERN unsigned int faults_reg_digi_from_gd_fpgaid;
+extern unsigned int faults_reg_system_control;
+extern unsigned int faults_reg_software;	    
+extern unsigned int faults_reg_digi_from_gd_fpgaid;
 
 #define FPGAID_FAULTS_MASK                        0x0FD6
 

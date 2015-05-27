@@ -8,8 +8,8 @@
   --------------------------------------------
 */
 
-#ifndef __A35975_H
-#define __A35975_H
+#ifndef __A35975_250_H
+#define __A35975_250_H
 
 #include <xc.h>
 #include <libpic30.h>
@@ -18,7 +18,6 @@
 #include <spi.h>
 #include "ETM.h"
 #include "P1395_CAN_SLAVE.h"
-#include "A35975_SETTINGS.h"
 #include "FIRMWARE_VERSION.h"
 #include "faults.h"
 

@@ -1,7 +1,7 @@
 #ifndef __FAULTS_H
 #define __FAULTS_H
 
-#include "A35975.h"
+#include "A35975_250.h"
 
 typedef struct {
   unsigned int spi1_bus_error;

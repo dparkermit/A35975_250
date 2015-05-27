@@ -1,4 +1,4 @@
-#include "A35975.h"
+#include "A35975_250.h"
 
 void ETMCanSlaveExecuteCMDBoardSpecific(ETMCanMessage* message_ptr) {
   unsigned int index_word;

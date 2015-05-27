@@ -1,4 +1,4 @@
-#include "A35975.h"
+#include "A35975_250.h"
 
 
 // CONTROL FAULT REGISTER, 3 main types

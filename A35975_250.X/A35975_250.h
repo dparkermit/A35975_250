@@ -19,7 +19,7 @@
 #include "ETM.h"
 #include "P1395_CAN_SLAVE.h"
 #include "FIRMWARE_VERSION.h"
-#include "faults.h"
+//#include "faults.h"
 
 #define FCY_CLK                    10000000
 
@@ -698,6 +698,113 @@ typedef struct {
 } TYPE_DIGI_READS;
 
 extern TYPE_DIGI_READS digi_reads[FAULT_SIZE];
+
+
+
+
+typedef struct {
+  unsigned int spi1_bus_error;
+  unsigned int spi2_bus_error;
+  unsigned int external_adc_false_trigger;
+  unsigned int LTC2656_write_error;
+  unsigned int setpoint_not_valid;
+  unsigned int scale16bit_saturation;
+  unsigned int reversescale16bit_saturation;
+} TYPE_DEBUG_COUNTER;
+
+extern TYPE_DEBUG_COUNTER global_debug_counter;
+
+
+// CONTROL FAULT REGISTER, 3 main types
+extern unsigned int faults_reg_system_control;
+extern unsigned int faults_reg_software;	    
+extern unsigned int faults_reg_digi_from_gd_fpgaid;
+
+#define FPGAID_FAULTS_MASK                        0x0FD6
+
+// main fault type definitions
+#define FAULTS_TYPE_SYSTEM_CONTROL                1
+#define FAULTS_TYPE_SOFTWARE                      2
+#define FAULTS_TYPE_DIGI_FROM_FPGAID              3
+
+// system fault bits
+#define FAULTS_SYS_FPGAID                         0x0001
+#define FAULTS_SYS_CAN_TIMEOUT                    0x0002
+#define FAULTS_SYS_FPGA_WATCHDOG_ERR              0x0004
+
+#define FAULTS_SYS_LOGIC_STATE                    0x0010
+#define FAULTS_SYS_ILLEGAL_INTERRUPT			  0x0020
+
+
+#define FAULTS_SW_EFOV_IFOC  					  0x0001  // Ef > (120% or .2V) ref, or If > Ifmax
+#define FAULTS_SW_EFUV       					  0x0002  // Ef < (85% or .2V) ref
+#define FAULTS_SW_ECUV      					  0x0004  // abs(Ec) < 120V
+#define FAULTS_SW_EKOV_EKUV  					  0x0008  // Ek 10% higher or lower
+
+#define FAULTS_SW_EGOV      					  0x0010  // Eg > (ref + 10)
+#define FAULTS_SW_24V        					  0x0020  // out of 10% 24V range
+
+
+
+
+
+#define NO_FAULTS  0x0000
+#define ALL_FAULTS 0x1111    
+
+
+
+void DoFaultRecord(unsigned int fault_type, unsigned int fault_bit);
+void DoFaultClear(unsigned int fault_type, unsigned int fault_bit);
+
+extern void CheckAnalogLimits(unsigned index);
+extern void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_reset);
+
+
+
+void UpdateFaults(void);
+/*
+  This function updates all faults that are checked on a periodic basis.
+  This is all faults EXCEPT for the pulse faults (these are checked after each pulse)
+  It is called by Do10msTicToc() once every 10 ms
+  What this function does
+  * Loads the fault/warning masks for the current state
+  * Checks all the Magnetron Faults Inputs and sets Status/Warning/Fault registers
+  * Checks all the HV Lambda Fault Inputs and sets Status/Warning/Fault registers
+  * Checks all the Thyratron Fault Inputs and sets Status/Warning/Fault registers
+  * Checks all the Control Board Faults and sets Status/Warning/Fault registers
+
+  */
+
+
+void UpdatePulseData(unsigned char mode);
+/*
+  This function updates all the pulse faults and is called after each pulse.
+  * Looks for an arc. 
+  */
+
+void ResetHWLatches(void);
+
+void ResetAllFaults();
+// DPARKER need to write function
+
+unsigned int CheckStartupFailed(void);
+
+unsigned int CheckFaultActive(void);
+
+unsigned int CheckColdFaultActive(void);
+
+
+
+
+
+void RecordThisMagnetronFault(unsigned int fault_bit);
+void RecordThisHighVoltageFault(unsigned int fault_bit);
+void RecordThisThyratronFault(unsigned int fault_bit);
+void RecordThisControlBoardFault(unsigned int fault_bit);
+
+
+void ResetPulseLatches(void);
+
 
 
 #endif

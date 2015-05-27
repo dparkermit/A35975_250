@@ -1,4 +1,18 @@
+// This is firmware for the Gun Driver Board
+
 #include "A35975_250.h"
+
+_FOSC(ECIO & CSW_FSCM_OFF); 
+_FWDT(WDT_ON & WDTPSA_512 & WDTPSB_8);  // 8 Second watchdog timer
+_FBORPOR(PWRT_64 & PWRT_OFF & BORV_45 & PBOR_OFF & MCLR_EN);
+_FBS(WR_PROTECT_BOOT_OFF & NO_BOOT_CODE & NO_BOOT_EEPROM & NO_BOOT_RAM);
+_FSS(WR_PROT_SEC_OFF & NO_SEC_CODE & NO_SEC_EEPROM & NO_SEC_RAM);
+_FGS(CODE_PROT_OFF);
+_FICD(PGD);
+
+
+
+
 
 
 // CONTROL FAULT REGISTER, 3 main types
@@ -100,44 +114,21 @@ unsigned char htr_OVOC_count = 0;   // for auto-reset htr OVOC feature
 unsigned int  htr_OVOC_rest_delay_timer_10ms = 0;	  // after OVOC fault, rest for a few seconds before turning htr on
 unsigned char htr_OVOC_auto_reset_disable = 0;        // if other system fault happens, disable htr OVOC auto-reset
 
-//	BUFFER64BYTE uart1_input_buffer;
-//	BUFFER64BYTE uart1_output_buffer;
 
-volatile unsigned int lvdinterrupt_counter = 0;
-
-volatile unsigned int _PERSISTENT last_known_action;
-volatile unsigned int _PERSISTENT last_osccon;
-
-unsigned int _PERSISTENT processor_crash_count;
-unsigned int previous_last_action;
-
-unsigned long hw_version_data;
-
-
-unsigned char sdo_reset_cmd_active;	  // logic resumes only when reset isn't active
+//unsigned char sdo_reset_cmd_active;	  // logic resumes only when reset isn't active
 unsigned char sdo_logic_reset;        // a separate cmd to reset fault
-unsigned char sdo_htd_timer_reset; 
+//unsigned char sdo_htd_timer_reset; 
 
-unsigned char sdo_htr_enable;
+//unsigned char sdo_htr_enable;
 unsigned char sdo_hv_bypass;
-unsigned char sdo_hv_enable;
-unsigned char sdo_pulsetop_enable;
-unsigned char sdo_trig_enable;  
+//unsigned char sdo_hv_enable;
+//unsigned char sdo_pulsetop_enable;
+//unsigned char sdo_trig_enable;  
 
 
 
 
 
-// This is firmware for the Gun Driver Board
-
-_FOSC(ECIO & CSW_FSCM_OFF); 
-//_FWDT(WDT_OFF);  // 1 Second watchdog timer
-_FWDT(WDT_ON & WDTPSA_64 & WDTPSB_8);  // 1 Second watchdog timer
-_FBORPOR(PWRT_OFF & BORV_45 & PBOR_OFF & MCLR_EN);
-_FBS(WR_PROTECT_BOOT_OFF & NO_BOOT_CODE & NO_BOOT_EEPROM & NO_BOOT_RAM);
-_FSS(WR_PROT_SEC_OFF & NO_SEC_CODE & NO_SEC_EEPROM & NO_SEC_RAM);
-_FGS(CODE_PROT_OFF);
-_FICD(PGD);
 
 
 //static void SetupAdc(void);
@@ -172,15 +163,8 @@ void DoA35975(void);
 
 int main(void) {
 
-  
-  // ---- Configure the dsPIC ADC Module ------------ //
-  ADPCFG = 0xffff;             // all are digital I/O
-
-  control_state = STATE_START_UP;
-   
   InitializeA35975();  
-
-  T1CONbits.TON = 1;
+  control_state = STATE_START_UP;
 
   analog_sets[ANA_SET_EK].ip_set = 0;
   analog_sets[ANA_SET_EF].ip_set = 0;
@@ -209,10 +193,6 @@ int main(void) {
 void DoStateMachine(void) {
   static unsigned int delay_counter; 
   static unsigned int ef_ref_step;
-  
-#ifdef LOOPBACK_TEST
-  unsigned char txData[8] = {1, 2, 3, 4, 7, 8, 5, 6};
-#endif
   
   
   if ((control_state & 0x7f) > STATE_SYSTEM_HV_OFF) {
@@ -249,9 +229,6 @@ void DoStateMachine(void) {
     analog_reads[ANA_RD_24V].read_f_lo = 3240; // 3600 - 360, 10% less 24V     
     delay_counter = 0;    
 
-#ifdef LOOPBACK_TEST
-    PutResponseToBuffer(8, &txData[0]);
-#endif
     control_state = STATE_START_UP2;
     break;
 
@@ -446,10 +423,8 @@ void DoStateMachine(void) {
     if (delay_counter > 10) {
       delay_counter = 0;
       system_byte |= SYS_BYTE_HV_DRIVEUP;
-      
       analog_reads[ANA_RD_EK].read_m_lo = 1;
-      
-	control_state = STATE_SYSTEM_PULSETOP_OFF;
+      control_state = STATE_SYSTEM_PULSETOP_OFF;
     }
     
     break;
@@ -581,6 +556,7 @@ void DoStateMachine(void) {
       control_state = STATE_START_UP;
     }
     break;
+
   case STATE_FAULT_HOT_FAULT:
     // waiting for reset cmd
     if (_SYNC_CONTROL_RESET_ENABLE)
@@ -620,8 +596,6 @@ void DoStateMachine(void) {
 }
   
 void InitializeA35975(void) {
-  unsigned int n;
-
  
   // Initialize the status register and load the inhibit and fault masks
   _FAULT_REGISTER = 0;
@@ -688,6 +662,8 @@ void InitializeA35975(void) {
   PIN_LED_WARMUP = !OLL_LED_ON;
   PIN_LED_SUM_FAULT = !OLL_LED_ON;
 
+  // ---- Configure the dsPIC ADC Module Analog Inputs------------ //
+  ADPCFG = 0xFFFF;             // all are digital I/O
  
   // Initialize all I/O Registers
   TRISA = A35975_TRISA_VALUE;
@@ -697,9 +673,7 @@ void InitializeA35975(void) {
   TRISF = A35975_TRISF_VALUE;
   TRISG = A35975_TRISG_VALUE;
 
-  // config SPI1 for Gun Driver
-  //ConfigureSPI(1, (A35975_SPI1CON_VALUE & A35975_SPI1CON_CLOCK), 0, A35975_SPI1STAT_VALUE, 1000000, FCY_CLK);  
-
+  // Config SPI1 for Gun Driver
   ConfigureSPI(ETM_SPI_PORT_1, A35975_SPI1CON_VALUE, 0, A35975_SPI1STAT_VALUE, SPI_CLK_1_MBIT, FCY_CLK);  
   
 
@@ -718,13 +692,20 @@ void InitializeA35975(void) {
   _T2IP = 5;
   T2CON = A35975_T2CON_VALUE;
 
-  ResetAllFaults();
+  ResetFPGA();
+  
+  faults_reg_system_control = 0;
+  faults_reg_software = 0;	 
+  faults_reg_digi_from_gd_fpgaid = 0;
+  
 
   // Initialize the Can module
   ETMCanSlaveInitialize(FCY_CLK, ETM_CAN_ADDR_GUN_DRIVER_BOARD, _PIN_RG12, 4);
   ETMCanSlaveLoadConfiguration(35975, 250, FIRMWARE_AGILE_REV, FIRMWARE_BRANCH, FIRMWARE_MINOR_REV);
 
 
+
+  /* DPARKER move to led pulse state
   for (n = 0; n < 2; n++) {
     PIN_LED_24DC_OK 		 = n? !OLL_LED_ON : OLL_LED_ON;
     __delay32(600000);
@@ -759,10 +740,10 @@ void InitializeA35975(void) {
     ClrWdt();
   }
 
+  */
+
   // LED Indicator Output Pins, keep 24DC on
   PIN_LED_24DC_OK = OLL_LED_ON;  
-      
-
 }
 
 
@@ -1034,17 +1015,13 @@ void SendWatchdogRef(unsigned int bits)
 
 
 
-
+unsigned char watch_dog_timer = 0;
+unsigned long read_cycles = 0;
+unsigned char gd_read_ptr;  // cycle the readbacks from gd fpga board
+unsigned int sec_count = 0;
 
 
 void Do10msTicToc(void) {
-
-  static unsigned char gd_read_ptr;  // cycle the readbacks from gd fpga board
-  static unsigned long read_cycles = 0;
-  static unsigned char watch_dog_timer = 0;
-
-  static unsigned int sec_count = 0;
-
   unsigned long temp;
   unsigned int i, bit_value;
   
@@ -1062,78 +1039,66 @@ void Do10msTicToc(void) {
     Other timing functions like flashing LEDs
   */
 
-  last_known_action = LAST_ACTION_DO_10MS;
 
-
-  ClrWdt();
-  
   // update one value from gd fpga board, watchdog channel is handled by watchdog kicking
   if (gd_read_ptr < 12)	{	// don't care ch9, 13, 14
-   	 
     temp = ReadAdcChannel(gd_read_ptr);
 
     if (gd_read_ptr <= 8) {
       analog_reads[ gd_read_ptr ].read_cur = temp;
       analog_reads[ gd_read_ptr ].read_cnt++;
       CheckAnalogLimits(gd_read_ptr);
-    }    
-    else if (gd_read_ptr >= 10 && gd_read_ptr <= 11) {	// only care about wdog and arc faults 
+    } else if (gd_read_ptr >= 10 && gd_read_ptr <= 11) {	// only care about wdog and arc faults 
       i = gd_read_ptr - 9;
-      if (temp <= 2500)   faults_from_ADC |= (1 << i);
-      else				faults_from_ADC &= ~(1 << i);
-            
+      if (temp <= 2500) {
+	faults_from_ADC |= (1 << i);
+      } else {
+	faults_from_ADC &= ~(1 << i);
+      }
+      
       if (digi_reads[i].action_code < 99) {
-	digi_reads[i].state = (temp > 2500);
-                
+	digi_reads[i].state = (temp > 2500);  
 	if (temp <= 2500) {
 	  DoFaultRecord(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i)); // mapped to fpgaID bit 1 & 2
 	}
       }
     }
-     
-  }
-  else {
-     
+  } else {
     temp = ReadFPGAID(); 
     // check if the ID read is valid
     if ((temp & 0x03c0) == (FPGA_ID & 0x03c0)) {  // check FPGA major version only.  0x40 for the low byte, two bits stay 0 for the 2nd low byte, xxxxxx00 01000000
       temp >>= 16;
-
       fpga_ASDR = (unsigned int)temp;
       // handle digi faults from fpgaid
-      for (i = 0; i < 16; i++)
-	{
-	  bit_value = (temp & (1 << i)) > 0;
-	  if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code < 99) {
-	    digi_reads[ i + DIGI_ID_ARC_COUNT].state = bit_value;
-	    if (bit_value)
-	      DoFaultRecord(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
-	    else if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code == 0)    
-	      DoFaultClear(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
+      for (i = 0; i < 16; i++) {
+	bit_value = (temp & (1 << i)) > 0;
+	if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code < 99) {
+	  digi_reads[ i + DIGI_ID_ARC_COUNT].state = bit_value;
+	  if (bit_value) {
+	    DoFaultRecord(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
+	  } else if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code == 0) {   
+	    DoFaultClear(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
 	  }
-               
 	}
-         
+      }
       PIN_LED_AC_ON = OLL_LED_ON;    
-        
-    }
-    else { // declare a fault
+    } else { // declare a fault
       PIN_LED_AC_ON = !OLL_LED_ON;    
       DoFaultRecord(FAULTS_TYPE_SYSTEM_CONTROL, FAULTS_SYS_FPGAID);
     }
-     
   }
   
   if (gd_read_ptr == 8)	{
     gd_read_ptr = 9; // bypass ch9
-  }
-  else if (gd_read_ptr == 11) {
+  } else if (gd_read_ptr == 11) {
     gd_read_ptr = 14; // bypass ch12, 13, 14
   } 
   
   gd_read_ptr = (gd_read_ptr + 1) & 0x000f;	 // 0 to 15 for gd_read_ptr
   
-  if (!gd_read_ptr)  read_cycles++;	 
+  if (!gd_read_ptr) {
+    read_cycles++;
+  }
   
   if (_T2IF) {
     _T2IF = 0;
@@ -1154,11 +1119,10 @@ void Do10msTicToc(void) {
     }
 
     watch_dog_timer++;
-    if (watch_dog_timer >= 3) 
-      {
-	DoFpgaWatchdog();  // tickle the watchdog every 30ms
-	watch_dog_timer = 0;
-      }
+    if (watch_dog_timer >= 3) {
+      DoFpgaWatchdog();  // tickle the watchdog every 30ms
+      watch_dog_timer = 0;
+    }
     
     // record debug data for CAN bus    
     local_debug_data.debug_0 = analog_reads[ANA_RD_EK].read_cur;
@@ -1180,24 +1144,35 @@ void Do10msTicToc(void) {
 
    
     if (ekuv_timeout_10ms) {
-      if (ekuv_timeout_10ms < 1000) ekuv_timeout_10ms++;
+      if (ekuv_timeout_10ms < 1000) {
+	ekuv_timeout_10ms++;
+      }
     }
-        
+    
    
-    if (ek_ref_changed_timer_10ms) ek_ref_changed_timer_10ms--;
-    if (ef_ref_changed_timer_10ms) ef_ref_changed_timer_10ms--;
-    if (eg_ref_changed_timer_10ms) eg_ref_changed_timer_10ms--;
+    if (ek_ref_changed_timer_10ms) {
+      ek_ref_changed_timer_10ms--;
+    }
 
-    if (htr_OVOC_rest_delay_timer_10ms) htr_OVOC_rest_delay_timer_10ms--; 
+    if (ef_ref_changed_timer_10ms) {
+      ef_ref_changed_timer_10ms--;
+    }
+    
+    if (eg_ref_changed_timer_10ms) {
+      eg_ref_changed_timer_10ms--;
+    }
+
+    if (htr_OVOC_rest_delay_timer_10ms) {
+      htr_OVOC_rest_delay_timer_10ms--; 
+    }
 
     
     if ((_FAULT_REGISTER &  0x04 /*_FAULT_GD_SW_HTR_OVOC */) && (htr_OVOC_count == 0)) {
       if (_SYNC_CONTROL_RESET_ENABLE  && ((faults_reg_software & FAULTS_SW_EFOV_IFOC) == 0))
-	  	   
 	_FAULT_REGISTER = _FAULT_REGISTER & (~0x04/* _FAULT_GD_SW_HTR_OVOC */);
     }
-        
-        
+    
+    
     led_pulse_count = ((led_pulse_count + 1) & 0b00111111);	 // 640ms
     if (led_pulse_count == 0) {
       // 10ms * 16 counter has ocurred
@@ -1207,46 +1182,10 @@ void Do10msTicToc(void) {
       } else {
 	PIN_LED_LAST_PULSE_GOOD = 1;
       }  
-      
     }
-    
-    
   } 
 }
 
-
-
-#if 0 // copied to ReadAdcChannel function
-/////////////////////////////////////////////////////////////////////////
-// SetupGDadc() setup the ADC chip on the Gun Driver board
-// 
-//
-static void SetupAdc(void)
-{
-  unsigned int temp;
- 
-  temp = LATD & 0x1fff; // D13 for DAC, D14 for ADC, D15 for Aux CS
-  temp |= PIN_CS_ADC_ENABLE_BIT;
-  LATD = temp;
-  __delay32(DELAY_PULSE_CABLE_SELECT_PROP_DELAY);        // Wait for the cable select signal to propagate
-
- 
-  //   temp = 0x78;  // clock mode 11(single conv), Ref mode 10 (internal, always on), no differential inputs 
-  temp = 0x74;  // clock mode 11(single conv), Ref mode 01 (external single ended), no differential inputs 
-  //   temp <<= 8; // high 8 bit out
-
-  //  	spiSend((~mode) & 0xFF00); 
-  temp = ~temp; 
-  SendAndReceiveSPI(temp & 0x00ff, ETM_SPI_PORT_1);     // send the setup byte out
-
-  temp = LATD & 0x1fff; // clear all CS bits
-  LATD = temp;
-  __delay32(DELAY_PULSE_CABLE_SELECT_PROP_DELAY);        // Wait for the cable select signal to propagate
-
-		
-  return;    
-}
-#endif
 
 
 #ifdef DEMO
@@ -1623,9 +1562,6 @@ unsigned char AreAnyReferenceNotConfigured(void)
 
 
 
-
-void LoadFaultMaskRegisters(void);
-void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit);
 
 
 
@@ -2248,327 +2184,6 @@ void SetEgLimits(void) {
 
   eg_ref_changed_timer_10ms = 220;  // 2.2s    
 
-}
-
-// DPARKER update pulse fault must be called at 10ms Interval or the sections that count "out of range" counts will be arbitrary time lengths
-
-void UpdateFaults(void) {
-#if 0
-  // See h file for documentation
-  unsigned int temp_u16int;
-
-  // The status registers are not latched so they are reset to zero each time the faults are evaluated
-  faults_magnetron_status_reg = 0;  
-  faults_high_voltage_status_reg = 0;
-  faults_thyratron_status_reg = 0;
-  faults_control_board_status_reg = 0;
-  
-  
-  // Load the fault masks for the current state
-  LoadFaultMaskRegisters();
-  
-  //------------------------- START MAGNETRON FAULTS ------------------------------//
-  
-  // Check External Magnetron Heater Over Voltage Latch
-  if (PIN_FILAMENT_OV_LATCH == ILL_FILAMENT_OV_FAULT) {
-    RecordThisMagnetronFault(FAULT_HW_MAGNETRON_FILAMENT_OV);
-  } 
-  
-  // Check that the magnetron heater voltage ADC reading has exceed fixed value set Config.h 
-  if (ps_filament.v_adc_reading > ps_filament.v_adc_over_abs) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_FILAMENT_OV_HARD_LIMIT);
-  }
-  
-  // Check that the magnetron heater voltage ADC reading is not greater than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least v_out_of_range_count before a fault is generated
-  if (CheckOverVoltFault(&ps_filament)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_FILAMENT_OV);
-  }
-  
-  // Check that the magnetron heater voltage ADC reading is not less than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least v_out_of_range_count before a fault is generated
-  if (CheckUnderVoltFault(&ps_filament)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_FILAMENT_UV);
-  }
-  
-  // Check that the magnetron heater current ADC reading is not greater than X% of its expected point (set in Config.h)
-  // It must remain outside this range for at least v_out_of_range_count before a fault is generated
-  if (CheckOverCurrentFault(&ps_filament)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_FILAMENT_OC);
-  }
-  
-  
-  // Check that the magnetron heater current ADC reading is not less than X% of its expected point (set in Config.h)
-  // It must remain outside this range for at least v_out_of_range_count before a fault is generated
-  if (CheckUnderCurrentFault(&ps_filament)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_FILAMENT_UC);
-  }
-  
-  
-  // Check External Magnetron Magnet Current Out of Range Latch
-  if (PIN_MAGNET_CURRENT_OOR_LATCH == ILL_MAGNET_CURRENT_OOR_FAULT) {
-    RecordThisMagnetronFault(FAULT_HW_MAGNETRON_MAGNET_COOR);
-  }
-  
-  // Check that the magnetron magnet current ADC reading has no exceeded fixed value set Config.h 
-  if (ps_magnet.i_adc_reading > ps_magnet.i_adc_over_abs) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_MAGNET_OC_HARD_LIMIT);
-  }
-  
-  // Check that the magnetron magnet current ADC reading is not greater than X% of its program point (set in Config.h)
-  if (CheckOverCurrentFault(&ps_magnet)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_MAGNET_OC);
-  }
-  
-  // Check that the magnetron magnet current ADC reading is not less than X% of its program point (set in Config.h)
-  if (CheckUnderCurrentFault(&ps_magnet)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_MAGNET_UC);
-  }
-  
-  // Check that the magnetron magnet voltage ADC reading is not greater than X% of its expected value (set in Config.h)
-  if (CheckOverVoltFault(&ps_magnet)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_MAGNET_OV);
-  }
-  
-  // Check that the magnetron magnet voltage ADC reading is not less than X% of its expected value (set in Config.h)
-  if (CheckUnderVoltFault(&ps_magnet)) {
-    RecordThisMagnetronFault(FAULT_MAGNETRON_MAGNET_UV);
-  }
-  
-  
-  //------------------------- START HIGH VOLTAGE FAULTS ------------------------------//
-  
-  // THE ARC FAULTS ARE CURRENTLY SET IN UpdatePulseData()
-  // UpdatesPulseData() is called after every pulse.
-  
-  // Check the digital fault outputs from from HV LAMBDA -
-  // The sum fault line must be set for HV_LAMBDA_SUM_FAULT_COUNTER_TRIP_POINT consective readings before a trip will occur
-  
-  
-  
-  if (PIN_HV_LAMBDA_SUM_FAULT == ILL_HV_LAMBDA_SUM_FAULT_FAULTED) {
-    // Record the sum fault and check the other fault lines
-    RecordThisHighVoltageFault(FAULT_HV_LAMBDA_SUM_FAULT);
-    
-    temp_u16int = MCP23017ReadSingleByte(&U64_MCP23017, MCP23017_REGISTER_GPIOA);
-    if (temp_u16int >= 0xFA00) {
-      global_debug_counter.i2c_bus_error++;
-    } else {
-      U64_MCP23017.input_port_a_in_ram = temp_u16int & 0xFF;
-      if (U64_MCP23017.input_port_a_in_ram & BIT_INPUT_HV_LAMBDA_OVER_TEMP) {
-	RecordThisHighVoltageFault(FAULT_HV_LAMBDA_OVER_TEMP);
-      }
-      if (U64_MCP23017.input_port_a_in_ram & BIT_INPUT_HV_LAMBDA_INTERLOCK_FAULT) {
-	RecordThisHighVoltageFault(FAULT_HV_LAMBDA_INTERLOCK_FAULT);
-      }
-      if (U64_MCP23017.input_port_a_in_ram & BIT_INPUT_HV_LAMBDA_LOAD_FLT) {
-	RecordThisHighVoltageFault(FAULT_HV_LAMBDA_LOAD_FAULT);
-      }
-      if (U64_MCP23017.input_port_a_in_ram & BIT_INPUT_HV_LAMBDA_PHASE_LOSS) {
-	RecordThisHighVoltageFault(FAULT_HV_LAMBDA_PHASE_LOSS);
-      }
-    }
-  }
-  
-  /*
-    FAULT_LAMBDA_EOC_TIMEOUT is checked/set by the TMR1 Interrupt
-  */
-
-
-  // DPARKER these vpeak readings . . . do we need them?  do they serve any purpose????
-  /*
-
-  // Check that the lambda vpeak ADC reading is not greater than X% of its set point (set in Config.h)
-  // It must remain outside this range for at least HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT before a fault is generated
-  if (hv_lambda_vpeak_adc_reading > hv_lambda_vpeak_adc_over_trip_point) {
-  hv_lambda_vpeak_over_voltage_count++;
-  } else if (hv_lambda_vpeak_over_voltage_count >= 1) {
-  hv_lambda_vpeak_over_voltage_count--;
-  }
-  if (hv_lambda_vpeak_over_voltage_count > HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT) {
-  RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_OVER_VOLTAGE);
-  }
-
-  // Check that the lambda vpeak ADC reading is not less than X% of its set point (set in Config.h)
-  // It must remain outside this range for at least HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT before a fault is generated
-  if (hv_lambda_vpeak_adc_reading < hv_lambda_vpeak_adc_under_trip_point) {
-  hv_lambda_vpeak_under_voltage_count++;
-  } else if (hv_lambda_vpeak_under_voltage_count >= 1) {
-  hv_lambda_vpeak_under_voltage_count--;
-  }
-  if (hv_lambda_vpeak_under_voltage_count > HV_LAMBDA_VPEAK_MAX_OUT_OF_RANGE_COUNT) {
-  RecordThisHighVoltageFault(FAULT_HV_LAMBDA_VPEAK_UNDER_VOLTAGE);
-  }
-  */
-  
-  //------------------------- START THYRATRON FAULTS ------------------------------//
- 
-  // Check that the thyratron cathode heater voltage ADC reading has exceed fixed value set Config.h 
-  if (ps_thyr_cathode_htr.v_adc_reading > ps_thyr_cathode_htr.v_adc_over_abs) {
-    RecordThisThyratronFault(FAULT_THYR_CATHODE_HEATER_OV_HARD_LIMIT);
-  }
-    
-  // Check that the thyratron heater voltage ADC reading is not greater than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least THYRATRON_HEATER_MAX_OUT_OF_RANGE_COUNT before a fault is generated  
-  if (CheckOverVoltFault(&ps_thyr_cathode_htr)) {
-    RecordThisThyratronFault(FAULT_THYR_CATHODE_HEATER_OV);
-  }
-
-  // Check that the thyratron heater voltage ADC reading is not less than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least THYRATRON_HEATER_MAX_OUT_OF_RANGE_COUNT before a fault is generated
-  if (CheckUnderVoltFault(&ps_thyr_cathode_htr)) {
-    RecordThisThyratronFault(FAULT_THYR_CATHODE_HEATER_UV);
-  }
-    
-  // Check if the 4-20ma Driver has reported a fault
-  if (PIN_4_20_DRVR_FLT == ILL_4_20_DRIVER_FAULT) {
-    RecordThisThyratronFault(FAULT_THYR_CATHODE_HEATER_DRVR_FLT);
-  }
-
-  // Check to see if the control loop has saturated.
-  // If it has that means that the SCR controller is no longer responding and it should be shut down
-  temp_u16int = thyratron_cathode_heater_PID.controlOutput;
-  if (temp_u16int & 0x8000) {
-    temp_u16int = 0x0000;
-  }
-  temp_u16int = temp_u16int << 1;
-  if (temp_u16int >= THYRATRON_DAC_SATURATED) {
-    RecordThisThyratronFault(FAULT_THYR_CATHODE_HEATER_CONTROL_SAT);
-  }
-  
-
-
-  // Check if the thyratron reservoir ADC reading has exceed fixed value set Config.h 
-  if (ps_thyr_reservoir_htr.v_adc_reading > ps_thyr_reservoir_htr.v_adc_over_abs) {
-    RecordThisThyratronFault(FAULT_THYR_RESER_HEATER_OV_HARD_LIMIT);
-  }
-
-
-  // Check that the thyratron reservoir voltage ADC reading is not greater than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least THYRATRON_HEATER_MAX_OUT_OF_RANGE_COUNT before a fault is generated  
-  if (CheckOverVoltFault(&ps_thyr_reservoir_htr)) {
-    RecordThisThyratronFault(FAULT_THYR_RESER_HEATER_OV);
-  }
-
-  // Check that the thyratron reservoir voltage ADC reading is not less than X% of its program point (set in Config.h)
-  // It must remain outside this range for at least THYRATRON_HEATER_MAX_OUT_OF_RANGE_COUNT before a fault is generated
-  if (CheckUnderVoltFault(&ps_thyr_reservoir_htr)) {
-    RecordThisThyratronFault(FAULT_THYR_RESER_HEATER_UV);
-  }
-
-  // Check if the 4-20ma Driver has reported a fault
-  if (PIN_4_20_DRVR_FLT == ILL_4_20_DRIVER_FAULT) {
-    RecordThisThyratronFault(FAULT_THYR_RESER_HEATER_DRVR_FLT);
-  }
-  
-  // Check to see if the control loop has saturated.
-  // If it has that means that the SCR controller is no longer responding and it should be shut down
-  temp_u16int = thyratron_reservoir_heater_PID.controlOutput;
-  if (temp_u16int & 0x8000) {
-    temp_u16int = 0x0000;
-  }
-  temp_u16int = temp_u16int << 1;
-  if (temp_u16int >= THYRATRON_DAC_SATURATED) {
-    RecordThisThyratronFault(FAULT_THYR_RESER_HEATER_CONTROL_SAT);
-  }
-
-
-  //------------------------- START CONTROL BOARD FAULTS ------------------------------//
-
-
-  // Check that the lambda supply powered up
-  if (PIN_HV_LAMBDA_POWER_UP == ILL_PIN_HV_LAMBDA_DID_NOT_POWER_UP) {
-    RecordThisControlBoardFault(FAULT_LAMBDA_OFF);
-  }
-  
-  // Check to see if digital interlock 1 is open  
-  if (PIN_INTERLOCK_1 == ILL_INTERLOCK_OPEN) {
-    RecordThisControlBoardFault(FAULT_DIGITAL_INTERLOCK_1);
-  }
-  
-  // Check to see if digital interlock 2 is open  
-  if (PIN_INTERLOCK_2 == ILL_INTERLOCK_OPEN) {
-    RecordThisControlBoardFault(FAULT_DIGITAL_INTERLOCK_2);
-  }
-  
-  // Check to see if digital interlock 3 is open  
-  if (PIN_INTERLOCK_3 == ILL_INTERLOCK_OPEN) {
-    RecordThisControlBoardFault(FAULT_DIGITAL_INTERLOCK_3);
-  }
-  
-  // Check to see if digital interlock 4 is open  
-  if (PIN_INTERLOCK_4 == ILL_INTERLOCK_OPEN) {
-    RecordThisControlBoardFault(FAULT_DIGITAL_INTERLOCK_4);
-  }
-#endif
-}
-
-void ResetPulseLatches(void) {
-#if 0
-  PIN_PULSE_LATCH_RESET = OLL_PULSE_LATCH_RESET;
-  __delay32(DELAY_PULSE_LATCH_RESET);
-  PIN_PULSE_LATCH_RESET = !OLL_PULSE_LATCH_RESET;
-#endif
-}
-
-
-void ResetHWLatches(void) {
-
-#if 0
-  // Reset the latches
-  PIN_LATCH_RESET = OLL_RESET_LATCH;
-  __delay32(DELAY_LATCH_RESET);
-  PIN_LATCH_RESET = !OLL_RESET_LATCH;
-#endif
-}
-
-void ResetAllFaults(void) {
-
-  ResetFPGA();
-  
-  faults_reg_system_control = 0;
-  faults_reg_software = 0;	 
-  faults_reg_digi_from_gd_fpgaid = 0;
-  
-  control_state = STATE_START_UP;
- 
- 
-}
-
-
-
-
-
-
-
-void LoadFaultMaskRegisters(void) {
-}
-
-
-
-void RecordThisMagnetronFault(unsigned int fault_bit) {  
-}
-
-
-
-
-
-void WriteToEventLog(unsigned char fault_register, unsigned int fault_bit) {
-  // DPARKER this function should write to the event log in ram and update the fault counter in RAM
-  // These values are moved to EEPROM later on  . . . like programmed later on
-}
-
-
-
-unsigned int CheckFaultActive(void) {
-  // return (faults_control_board_fault_reg | faults_thyratron_fault_reg | faults_magnetron_fault_reg | faults_high_voltage_fault_reg);
-  return (0);
-}
-
-
-unsigned int CheckColdFaultActive(void) {
-  unsigned int temp = 0;
-  return temp;
 }
 
 

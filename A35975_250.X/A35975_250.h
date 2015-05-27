@@ -59,8 +59,6 @@
 //#define TEST_SIMULATOR    1
 
 
-//#define LOOPBACK_TEST    1
-
 //#define ENABLE_STANDARD_CANOPEN     1   // enable heartbeat, standard command set
 
 
@@ -761,49 +759,8 @@ extern void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_res
 
 
 
-void UpdateFaults(void);
-/*
-  This function updates all faults that are checked on a periodic basis.
-  This is all faults EXCEPT for the pulse faults (these are checked after each pulse)
-  It is called by Do10msTicToc() once every 10 ms
-  What this function does
-  * Loads the fault/warning masks for the current state
-  * Checks all the Magnetron Faults Inputs and sets Status/Warning/Fault registers
-  * Checks all the HV Lambda Fault Inputs and sets Status/Warning/Fault registers
-  * Checks all the Thyratron Fault Inputs and sets Status/Warning/Fault registers
-  * Checks all the Control Board Faults and sets Status/Warning/Fault registers
-
-  */
-
-
-void UpdatePulseData(unsigned char mode);
-/*
-  This function updates all the pulse faults and is called after each pulse.
-  * Looks for an arc. 
-  */
-
-void ResetHWLatches(void);
-
 void ResetAllFaults();
 // DPARKER need to write function
-
-unsigned int CheckStartupFailed(void);
-
-unsigned int CheckFaultActive(void);
-
-unsigned int CheckColdFaultActive(void);
-
-
-
-
-
-void RecordThisMagnetronFault(unsigned int fault_bit);
-void RecordThisHighVoltageFault(unsigned int fault_bit);
-void RecordThisThyratronFault(unsigned int fault_bit);
-void RecordThisControlBoardFault(unsigned int fault_bit);
-
-
-void ResetPulseLatches(void);
 
 
 

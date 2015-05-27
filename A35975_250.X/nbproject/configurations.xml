@@ -6,7 +6,6 @@
                    projectFiles="true">
       <itemPath>A35975_250.h</itemPath>
       <itemPath>FIRMWARE_VERSION.h</itemPath>
-      <itemPath>faults.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

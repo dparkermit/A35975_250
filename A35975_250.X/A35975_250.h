@@ -231,8 +231,8 @@
   This must be slower to compensate for the 2x delay across the optocoupler 200ns with filtering in one direction, 80ns (without filtering) in the other direction
   Minimum clock period is therefore 280ns + holdtime + margins
 */
-//#define A35975_SPI1CON_VALUE  (FRAME_ENABLE_OFF & ENABLE_SDO_PIN & SPI_MODE16_OFF & SPI_SMP_OFF & SPI_CKE_OFF & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH & MASTER_ENABLE_ON)
-//#define A35975_SPI1STAT_VALUE (SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR)   
+#define A35975_SPI1CON_VALUE  (FRAME_ENABLE_OFF & ENABLE_SDO_PIN & SPI_MODE16_OFF & SPI_SMP_OFF & SPI_CKE_OFF & SLAVE_ENABLE_OFF & CLK_POL_ACTIVE_HIGH & MASTER_ENABLE_ON)
+#define A35975_SPI1STAT_VALUE (SPI_ENABLE & SPI_IDLE_CON & SPI_RX_OVFLOW_CLR)   
 //#define A35975_SPI1CON_CLOCK (SEC_PRESCAL_4_1 & PRI_PRESCAL_4_1)
 //#define A35975_SPI2CON_CLOCK (SEC_PRESCAL_2_1 & PRI_PRESCAL_1_1)
 

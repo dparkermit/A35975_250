@@ -46,21 +46,11 @@
 
 // --------- Compile Time Options -----------------
 
-//#define DEMO   /* simulator for CAN protocol */
-
 #define TEST_MODE_BYP_FIBER_OFF        1    /* don't turn off hv or trig because fiber off, for test only */
 
 #define USE_ENGINEERING_UNIT_ON_GUN_DRIVER    1   /* use engineering units for all parameters on CAN */
 
 //#define TEST_BYP_FPGA_FAULTS       1
-
-//#define TEST_STATE_LOG             1
-
-//#define TEST_SIMULATOR    1
-
-
-//#define ENABLE_STANDARD_CANOPEN     1   // enable heartbeat, standard command set
-
 
 
 
@@ -762,6 +752,9 @@ extern void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_res
 void ResetAllFaults();
 // DPARKER need to write function
 
+typedef struct {
+  unsigned int watchdog_count_error;
 
+} TYPE_GLOBAL_DATA_A35975_250;
 
 #endif

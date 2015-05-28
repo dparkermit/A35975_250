@@ -11,7 +11,7 @@ _FGS(CODE_PROT_OFF);
 _FICD(PGD);
 
 
-
+TYPE_GLOBAL_DATA_A35975_250 global_data_A35975_250;
 
 
 
@@ -1025,20 +1025,6 @@ void Do10msTicToc(void) {
   unsigned long temp;
   unsigned int i, bit_value;
   
-  /*
-    Certain functions need to happen at regular interval for the system to work
-
-    Thyratron PIDs - The gain and phase of the PID control loop is a function of it's execution frequency therefor it must be updated at a regular interval
-    Analog Filters - The filter response is function of the execution frequency so they must be executed at a regular interval
-
-    DAC updates - The DAC must be regularly.  Durring HV ON this should happen AFTER a pulse so that the SPI bus is not corrupted by EMI
-    If the state is not in HV_ON or the system is pulsing at a very low freqeuncy, DAC updates must be handeled by this function.
-    
-    Calculating the PRF
-
-    Other timing functions like flashing LEDs
-  */
-
 
   // update one value from gd fpga board, watchdog channel is handled by watchdog kicking
   if (gd_read_ptr < 12)	{	// don't care ch9, 13, 14
@@ -1124,7 +1110,8 @@ void Do10msTicToc(void) {
       watch_dog_timer = 0;
     }
     
-    // record debug data for CAN bus    
+    // record debug data for CAN bus  
+    /*
     local_debug_data.debug_0 = analog_reads[ANA_RD_EK].read_cur;
     local_debug_data.debug_1 = analog_reads[ANA_RD_IKA].read_cur;
     local_debug_data.debug_2 = analog_reads[ANA_RD_IKP].read_cur;
@@ -1141,6 +1128,9 @@ void Do10msTicToc(void) {
     local_debug_data.debug_D = analog_sets[ANA_SET_EK].ip_set;
     local_debug_data.debug_E = analog_sets[ANA_SET_EF].ip_set;
     local_debug_data.debug_F = analog_sets[ANA_SET_EG].ip_set;
+    */
+    local_debug_data.debug_0 = global_data_A35975_250.watchdog_count_error;
+    
 
    
     if (ekuv_timeout_10ms) {
@@ -1176,7 +1166,6 @@ void Do10msTicToc(void) {
     led_pulse_count = ((led_pulse_count + 1) & 0b00111111);	 // 640ms
     if (led_pulse_count == 0) {
       // 10ms * 16 counter has ocurred
-      // Flash the LED - NOTE "PIN_MAIN_CONTACTOR_CLOSE = !PIN_MAIN_CONTACTOR_CLOSE" was causing any changes made in Port F durring interrupt to be overwritten
       if (PIN_LED_LAST_PULSE_GOOD) {
 	PIN_LED_LAST_PULSE_GOOD = 0;
       } else {
@@ -1188,99 +1177,6 @@ void Do10msTicToc(void) {
 
 
 
-#ifdef DEMO
-/////////////////////////////////////////////////////////////////////////
-// CalculateDemoAdc() 
-//  
-//
-static unsigned CalculateDemoAdc(unsigned chan)
-{
-  unsigned ret = 0;
-  double temp = 0;
-  static double little_change = -0.002; 
-    
-   
-    
-  switch (chan) {
-  case ANA_RD_EK:
-    if ((control_state & 0x7f) >= STATE_HV_STARTUP) {
-      temp = (double)analog_sets[ANA_SET_EK].ip_set * (-0.0003333);	// ref v
-      temp += temp * little_change;
-      temp /= -0.005555;
-    }
-    break;
-  case ANA_RD_IKA:
-    if ((control_state & 0x7f) >= STATE_HV_STARTUP) {
-      temp = 202.2;
-      temp += temp *little_change;            
-      temp = temp/0.001667;
-    }
-    break;
-  case ANA_RD_IKP:
-    if ((control_state & 0x7f) >= STATE_HV_STARTUP) {
-      temp = 602.5;
-      temp += temp * little_change;            
-      temp = temp/0.277;
-    }
-    break;
-  case ANA_RD_EF:
-    //	if ((control_state & 0x7f) >= STATE_HEATER_STARTUP) {
-    temp = analog_sets[ANA_SET_EF].ip_set_flag? analog_sets[ANA_SET_EF].ip_set_alt : analog_sets[ANA_SET_EF].ip_set;
-    temp *= 0.000133;	// ref v
-    temp += temp * little_change;            
-    temp /= 0.00222;
-    //    }
-    break;
-  case ANA_RD_IF:
-    if ((control_state & 0x7f) >= STATE_HEATER_STARTUP) {
-      temp = 2.5;
-      temp += temp * little_change;
-      temp /= 1.667e-3;
-    }
-    break;
-  case ANA_RD_EG:
-    if ((control_state & 0x7f) < STATE_PULSETOP_STARTUP) {
-      temp = 80;
-      temp /= 0.1111;
-    }           
-    else {
-      temp = (double)analog_sets[ANA_SET_EG].ip_set * 0.00666 - 80;  // -80 offset
-      temp += temp * little_change;            
-      temp += 80;
-      temp /= 0.1111;
-    }
-    break;
-  case ANA_RD_EC:
-    temp = -150.5;
-    temp += temp * little_change;
-    temp /= -55.55e-3;
-    break;
-  case ANA_RD_24V:
-    temp = 24;
-    temp += temp * little_change;            
-    temp /= 0.00666;            
-    break;
-  case ANA_RD_TEMP:
-    temp = 40;
-    temp += temp * little_change; 
-    temp /= 0.0133;           
-    break;
-     
-  default:
-    temp = 0xfff; // set high for no fault
-    break;
-  }
-
-  if (temp > 0xfff) temp = 0xfff;
-  else if (temp < 0) temp = 0;
-    
-  ret = (unsigned)(temp + 0.5);
-
-  little_change += 0.001;
-  if (little_change > 0.002) little_change = -0.002; // change between -0.002 to 0.002
-  return (ret);
-}
-#endif
 /////////////////////////////////////////////////////////////////////////
 // ReadAdcChannel() 
 // read ADC one channel 
@@ -1561,121 +1457,6 @@ unsigned char AreAnyReferenceNotConfigured(void)
 
 
 
-
-
-
-
-/*
-  FAULT EVALUATION
-  
-  10_ms_tic_toc
-  Once every 10ms, the internal ADC is read and faults are updated
-
-  After Every Pulse
-
-  DPARKER give a big description of each fault here - How the input is measured, how the data is filtered, how the fault is generated (delay if included)
-
-*/
-
-
-/*
-  In each State, Each fault input can do one of the following . . .
-
-  1) It can be totally ignored (This is the default behavior - If the warning mask & the fault mask are NOT set)
-  2) It can cause a fault  (This is set by the fault MASK)
-  There are no "warm" or "cold" faults.  Any fault in state warm_ready or hv_on will go to state warm fault.
-  If the fault is still active in the warm state fault then it will move to cold fault.
-  3) It can cause a latched warning (This is set the warning MASK)
-  NOTE: the warning register is independent of the fault mask.  To be latched as a warning, the fault input MUST BE IN THE WARNING REGISTER
-  4) Special state at startup to handle board level failures . . . ????
-*/
-
-/*  
-    Fault Log
-    
-    Each entry in the fault log contains the following information
-    4 bits for fault register bit
-    2 bits for fault register select
-    2 bits for the calling state (HV_ON, WARM_READY, FAULT, STARTUP)
-*/
-
-/*
-  For each state there are three fault masks for each fault register.
-  Warning Ignore Mask - This shows which fault inputs will NOT generate a warning (this is mainly for debugging and and is used to filter out non-events, if a fault is in the warning ignore mask and in the warm or cold fault mask it will still generate a fault)
-  Faul Mask - this shows which fault inputs will generate a fault in the current state
-
-
-*/
-
-/*
-
-  Status_Register -> This register shows the current states of all the Inputs.  It IS NOT LATCHED.
-  Fault_Register -> This register latches any fault input that matches the fault_mask for the current state.
-  Warning_Latch_Regisiter -> Any fault input that matches the fault_mask or the warning_mask will be latched in this register.
-
-  How faults are checked . . .
-  
-  Every time through a control loop, 50us->500us depending upon the state, all faults registeres are updated and checked.
-  Faults like magnetron_heater_over_current - The limit is compared to the filtered data in RAM every time, even though the filtered data in ram is only update once every 10mS
-  The fault status register is then compared to the masks to generate the warnings and faults.
-
-*/
-
-/* ----------------------FAULT MANAGEMENT ----------------------*/
-
-/*
-  There are lots of Fault Conditions, see A34335.h for a list of fault registeres and faults.
-  For a given state a particular Input may
-  1) No Action - But set a non latching status bit indicating the state of the fault input
-  2) No Action - But set a latching "warning" bit 
-  3) Generate a fault Condition - This will change the state to warm fault (or cold fault if the fault is globably defined as a cold fault)
- 
-
-  How are faults handeled . . .
-  There a 3 data storage locations for each fault register.
-  Status_Register -> This register shows the current states of all the Inputs.  It IS NOT LATCHED.
-  Latch_Regisiter -> This is a latched version of the the status register.
-  Fault_Register  -> If the Input is a Fault (it matches the warm_fault OR cold_fault mask) it is latched into the Fault Register
-  
-  How external data and faults are processesed . . . 
-
-  Data is read from the external ADCs and inernal ADCs on a regular 10ms interval or after a pulse (for pulse data types).
-  This inerval is scheduled to occur directly proceding a pulse if possible (pulse rate > 100 Hz).
-  At PRF less than 100Hz (or in any other state) the readings will take place at opproximate 10ms intervals
-  ADC values are filtered with software RC/glitch filters when they are read.
- 
- 
-  Faults are evaluated durring the 10ms_tic_toc the occurs once every (approximatly) 10mS
-  The following steps occur
-  1) Status registers are reset to zero
-  2) The input condition is tested, if it is a "logical fault" then (record_this_xxxxx_fault) is called which does the following
-  a) Sets the appropriate bit in the status register
-  b) If the bit matches the fault_mask, 
-  ^ The appropriate bit in the fault register is set
-  ^ The fault is added to the error log - TO BE IMPLEMENTED
-  c) If the bit matches the warning_mask, the appropriate bit in the warning register is set 
-  
-  STEP 2 is repeated for all fault conditions.
-
-  Some faults can not be tested durring the 10ms TicToc.
-  These faults will have record_this_xxxxx_fault called when the fault is checked.
-  These faults are . . .
-  FAULT_HV_LAMBDA_EOC_TIMEOUT - this is evaluated in the TMR1 interrupt and set there.
-
-
-  After all the faults have been tested and the fault registers updated the following action occurs
-  
-  + A cold shutdown occurs
-  + A warm shutdown occurs
-  
-  + The fault is added to the Log
-  + For *some* important faults, the fault counter is incremented.
-
-  + The fault is added to the Log
-  + For *some* important faults, the fault counter is incremented.
-  
-*/
-
 /////////////////////////////////////////////////////////////////////////
 // DoFaultAction() 
 // take actions	when faulting
@@ -1730,6 +1511,9 @@ void DoFaultRecord(unsigned int fault_type, unsigned int fault_bit) {
             
       if (fault_bit & (FAULTS_SYS_FPGAID |	FAULTS_SYS_FPGA_WATCHDOG_ERR)) 
 	_FAULT_GD_FPGA_COMM_LOST = 1;
+      if (fault_bit & FAULTS_SYS_FPGA_WATCHDOG_ERR) {
+	global_data_A35975_250.watchdog_count_error++;
+      }
     }			   	
     break;												   
 	

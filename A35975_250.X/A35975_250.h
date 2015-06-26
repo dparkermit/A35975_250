@@ -434,32 +434,6 @@ enum {
   See flow diagram for more information
   DPARKER add flow diagram doc number
 */
-#define STATE_START_UP                       0x06
-#define STATE_START_UP2                      0x08
-
-#define STATE_SYSTEM_HTR_OFF          		 0x10
-#define STATE_READY_FOR_HEATER 				 0x12
-#define STATE_HEATER_STARTUP   				 0x14
-#define STATE_WARM_UP                        0x16
-
-#define STATE_SYSTEM_HV_OFF                  0x20
-#define STATE_READY_FOR_HV		     		 0x22
-#define STATE_HV_STARTUP                     0x24
-#define STATE_HV_ON                          0x26
-
-#define STATE_SYSTEM_PULSETOP_OFF            0x30
-#define STATE_READY_FOR_PULSETOP    		 0x32
-#define STATE_PULSETOP_STARTUP               0x34
-#define STATE_PULSETOP_ON		             0x36
-
-#define STATE_SYSTEM_TRIG_OFF                0x40
-#define STATE_READY_FOR_TRIG		         0x42
-#define STATE_TRIG_STARTUP	                 0x44
-#define STATE_TRIG_ON	                     0x46
-
-
-#define STATE_FAULT_COLD_FAULT               0x80 
-#define STATE_FAULT_HOT_FAULT                0xA0 // 0x80 + 0x20
 
 
 /* 
@@ -509,100 +483,16 @@ extern void ResetFPGA(void);
  
 
 
-#define _ISRFASTNOPSV __attribute__((interrupt, shadow, no_auto_psv)) 
-#define _ISRNOPSV __attribute__((interrupt, no_auto_psv)) 
-
-
-/*
-  --- Gobal Variales ---
-*/
-extern unsigned char control_state;
-extern unsigned char last_control_state;
-extern unsigned char system_byte;
-
-extern unsigned int led_pulse_count;
-extern unsigned int htd_timer_in_100ms;
-extern unsigned int software_skip_warmup;	
-
-extern unsigned int fpga_ASDR;
-extern unsigned int faults_from_ADC;
-
-extern unsigned long read_cycles_in_2s;
- 
-extern unsigned int ekuv_timeout_10ms;
-
-extern unsigned int ek_ref_changed_timer_10ms;   // mask Ek faults when ref is changed
-extern unsigned int ef_ref_changed_timer_10ms;   // mask Ef, If faults when ref is changed
-extern unsigned int eg_ref_changed_timer_10ms;   // mask Eg fault when ref is changed
-
-extern unsigned char htr_OVOC_count;                  // for auto-reset htr OVOC feature
-extern unsigned int  htr_OVOC_rest_delay_timer_10ms;  // after OVOC fault, rest for a few seconds before turning htr on
-extern unsigned char htr_OVOC_auto_reset_disable;     // if other system fault happens, disable htr OVOC auto-reset
-
-//	extern BUFFER64BYTE uart1_input_buffer;
-//	extern BUFFER64BYTE uart1_output_buffer;
-
-extern volatile unsigned int lvdinterrupt_counter;
-
-extern volatile unsigned int _PERSISTENT last_known_action;
-extern volatile unsigned int _PERSISTENT last_osccon;
-
-extern unsigned int _PERSISTENT processor_crash_count;
-extern unsigned int previous_last_action;
-
-extern  unsigned long hw_version_data;
-
-
-extern signed int ps_magnet_config_ram_copy[16];
-extern unsigned long EE_address_ps_magnet_config_in_EEPROM;
-
-
-
-#define LAST_ACTION_DEFAULT_INT                        0xFABC
-#define LAST_ACTION_CLEAR_LAST_ACTION                  0x0000
-//#define LAST_ACTION_ADC_INTERRUPT                      0x0001
-#define LAST_ACTION_LVD_INT                            0x0002
-//#define LAST_ACTION_T1_INT                             0x0003
-//#define LAST_ACTION_INT1_INT                           0x0004
-//#define LAST_ACTION_UPDATE_IO_EXPANDER                 0x0005
-#define LAST_ACTION_FILTER_ADC                         0x0006
-#define LAST_ACTION_READ_ISOLATED_ADC                  0x0007
-//#define LAST_ACTION_DO_THYRATRON_PID                   0x0008
-#define LAST_ACTION_DO_10MS                            0x0009
-#define LAST_ACTION_UPDATE_DAC_ALL                     0x000A
-//#define LAST_ACTION_POST_PULSE_PROC                    0x000B
-#define LAST_ACTION_HV_ON_LOOP                         0x000C
-#define LAST_ACTION_OSC_FAIL                           0x000D
-#define LAST_ACTION_ADDRESS_ERROR                      0x000E
-#define LAST_ACTION_STACK_ERROR                        0x000F
-#define LAST_ACTION_MATH_ERROR                         0x0010
-
-
-// CAN bus related variables
-
-extern unsigned char sdo_reset_cmd_active;	  // logic resumes only when reset isn't active
-extern unsigned char sdo_logic_reset;        // a separate cmd to reset fault
-extern unsigned char sdo_htd_timer_reset; 
-
-extern unsigned char sdo_htr_enable;
-extern unsigned char sdo_hv_bypass;
-extern unsigned char sdo_hv_enable;
-extern unsigned char sdo_pulsetop_enable;
-extern unsigned char sdo_trig_enable;  
-
-
 
 
 #define _STATUS_GD_HV_DISABLE                           _STATUS_0	
 #define _STATUS_GD_HTR_NOT_READY                        _STATUS_1
 #define _STATUS_GD_TRIG_NOT_ENABLED                     _STATUS_2
 #define _STATUS_GD_TOP_NOT_ENABLED                      _STATUS_3
-#define _STATUS_GD_HV_NOT_ENABLED    				    _STATUS_4
+#define _STATUS_GD_HV_NOT_ENABLED    			_STATUS_4
 #define _STATUS_GD_HTR_NOT_ENABLED                      _STATUS_5	
 
-//#define _STATUS_GD_FPGA_DIP_SWITCH                      _STATUS_5
-//#define _STATUS_GD_FPGA_WIDTH_LIMITING                  _STATUS_6
-//#define _STATUS_GD_FPGA_ARC_WARNING                     _STATUS_7
+
 
 #define _FAULT_GD_SUM_FAULT                             _FAULT_0
 #define _FAULT_GD_FPGA_COMM_LOST                        _FAULT_1
@@ -612,149 +502,72 @@ extern unsigned char sdo_trig_enable;
 #define _FAULT_GD_SW_EK_UV                              _FAULT_5
 #define _FAULT_GD_SW_GRID_OV                            _FAULT_6
 #define _FAULT_GD_FPGA_TEMP_75C                         _FAULT_7
-
 #define _FAULT_CAN_COMMUNICATION_LATCHED                _FAULT_8
-
 #define _FAULT_GD_FPGA_ARC_FAULT                        _FAULT_9
 #define _FAULT_GD_FPGA_PULSE_FAULT                      _FAULT_A
 #define _FAULT_GD_FPGA_GRID_FAULT                       _FAULT_B
-
 #define _FAULT_GD_SW_HTR_UV                             _FAULT_C
 #define _FAULT_GD_SW_24V_FAULT                          _FAULT_D
 #define _FAULT_GD_SYS_FAULTS                            _FAULT_E
-//#define _FAULT_GD_SYS_FAULTS                            _FAULT_F
 
 
 
-typedef struct {
-  unsigned int channel;       /* DAC channel 							   */
-  unsigned int ip_set;        /* current setting (0-ffff)		           */
-  unsigned int ip_set_alt;    /* static alt setting if flag              */
-  unsigned int ip_set_flag;   /* static alt setting if varptr goes true  */
-				  
-  unsigned int ip_set_max;    /* factory maximum setting (0-ffff) 	   */
-  unsigned int ip_set_min;    /* factory minimum setting (0-ffff) 	   */
-
-  unsigned int need_update; 
-
-} TYPE_ANALOG_SETS;
-extern TYPE_ANALOG_SETS analog_sets[ANALOG_SET_SIZE];
-
-
-typedef struct {
-  unsigned int channel;	/* ADC channel 							       */
-  unsigned int read_cur;  /* current reading                             */
-
-  unsigned int read_cnt;  /* how many readings taken                     */
-  unsigned int read_err;  /* how many errors                             */
-
-  unsigned int read_f_lo; /* low end fault level                         */
-  unsigned int read_f_hi; /* high end fault level                        */
-  unsigned int read_m_lo; /* lo end mask   0 off   1 on   2 trip         */
-  unsigned int read_m_hi; /* hi end mask   0 off   1 on   2 trip         */
-  unsigned int events;
-  void (*fault_vect)(unsigned state);
-
-} TYPE_ANALOG_READS;
-extern TYPE_ANALOG_READS analog_reads[ANALOG_READ_SIZE];
-
-
-
-typedef struct {
-  // -------- These are used to calibrate and scale the ADC Reading to Engineering Units ---------
-  unsigned int fixed_scale;
-  signed int   fixed_offset;
-
-} TYPE_CAN_SCALE_TABLE;
-
-extern TYPE_CAN_SCALE_TABLE CAN_scale_table[CAN_SCALE_TABLE_SIZE];
-
-
-
-typedef struct {
-  unsigned int state;                 /* fault input state                */
-  unsigned int mask;                  /* 0 = disabled  -  1 = enabled     */
-
-  unsigned int from_adc;              /* 1: from ADC, 0: from FPGA ID     */
-  unsigned int bits;                   /* bit position */
-  unsigned int fre;                   /* how many events have to happen   */
-  /* 0 = do next. 1 = one free        */
-  unsigned int left;                  /* how many events left.            */
-
-  unsigned int fault_latched;         /* fault was latched, need send RESET to FPGA board  */
-  unsigned int action_code;           /* 0: no action, update the bit, 1: htr off, 2: hv off, 3: pulsetop off, 4: trig off, 99: ignore the bit */
-} TYPE_DIGI_READS;
-
-extern TYPE_DIGI_READS digi_reads[FAULT_SIZE];
-
-
-
-
-typedef struct {
-  unsigned int spi1_bus_error;
-  unsigned int spi2_bus_error;
-  unsigned int external_adc_false_trigger;
-  unsigned int LTC2656_write_error;
-  unsigned int setpoint_not_valid;
-  unsigned int scale16bit_saturation;
-  unsigned int reversescale16bit_saturation;
-} TYPE_DEBUG_COUNTER;
-
-extern TYPE_DEBUG_COUNTER global_debug_counter;
-
-
-// CONTROL FAULT REGISTER, 3 main types
-extern unsigned int faults_reg_system_control;
-extern unsigned int faults_reg_software;	    
-extern unsigned int faults_reg_digi_from_gd_fpgaid;
-
-#define FPGAID_FAULTS_MASK                        0x0FD6
-
-// main fault type definitions
-#define FAULTS_TYPE_SYSTEM_CONTROL                1
-#define FAULTS_TYPE_SOFTWARE                      2
-#define FAULTS_TYPE_DIGI_FROM_FPGAID              3
-
-// system fault bits
-#define FAULTS_SYS_FPGAID                         0x0001
-#define FAULTS_SYS_CAN_TIMEOUT                    0x0002
-#define FAULTS_SYS_FPGA_WATCHDOG_ERR              0x0004
-
-#define FAULTS_SYS_LOGIC_STATE                    0x0010
-#define FAULTS_SYS_ILLEGAL_INTERRUPT			  0x0020
-
-
-#define FAULTS_SW_EFOV_IFOC  					  0x0001  // Ef > (120% or .2V) ref, or If > Ifmax
-#define FAULTS_SW_EFUV       					  0x0002  // Ef < (85% or .2V) ref
-#define FAULTS_SW_ECUV      					  0x0004  // abs(Ec) < 120V
-#define FAULTS_SW_EKOV_EKUV  					  0x0008  // Ek 10% higher or lower
-
-#define FAULTS_SW_EGOV      					  0x0010  // Eg > (ref + 10)
-#define FAULTS_SW_24V        					  0x0020  // out of 10% 24V range
-
-
-
-
-
-#define NO_FAULTS  0x0000
-#define ALL_FAULTS 0x1111    
-
-
-
-void DoFaultRecord(unsigned int fault_type, unsigned int fault_bit);
-void DoFaultClear(unsigned int fault_type, unsigned int fault_bit);
-
-extern void CheckAnalogLimits(unsigned index);
-extern void DoFaultAction(unsigned char type, unsigned char disable_htr_auto_reset);
-
-
-
-void ResetAllFaults();
-// DPARKER need to write function
 
 typedef struct {
   unsigned int watchdog_count_error;
+  unsigned int control_state;
+  unsigned int start_up_counter;
+
+  unsigned int heater_voltage_target;   // This is the targeted heater voltage set poing
+  unsigned int heater_ramp_counter;
+  AnalogOutput analog_output_heater_voltage;
+  AnalogOutput analog_output_high_voltage;
+  AnalogOutput analog_output_top_voltage;
+
+  unsigned int FPGA_input_hv_enable;
+  unsigned int FPGA_input_htr_enable;
+  unsigned int FPGA_input_top_enable;
+  unsigned int FPGA_input_trigger_enable;
+  unsigned int FPGA_watc;
+  
+  unsigned int power_supply_startup_up_counter;
+  
+  AnalogInput  input_hv_v_mon;
+  AnalogInput  input_hv_i_mon;
+  AnalogInput  input_gun_i_peak;
+  AnalogInput  input_htr_v_mon;
+  AnalogInput  input_htr_i_mon;
+  AnalogInput  input_top_v_mon;
+  AnalogInput  input_bias_v_mon;
+  AnalogInput  input_24_v_mon;
+  AnalogInput  input_temperature_mon;
+
+  unsigned int FPGA_output_grid_fault_not;
+  unsigned int FPGA_output_pw_duty_fault_not;
+  unsigned int FPGA_output_temp_gt_nott;
+  unsigned int FPGA_output_arc_fault_not;
+  unsigned int FPGA_output_watchdog_fault_not;
+  unsigned int FPGA_otuput_htr_warmup_fault_not;
+
+  unsigned int adc;
+
+
+
+
+
 
 } TYPE_GLOBAL_DATA_A35975_250;
+
+
+
+#define STATE_START_UP                       0x10
+#define STATE_WAIT_FOR_CONFIG                0x20
+#define STATE_HEATER_RAMP_UP                 0x30
+#define STATE_HEATER_RAMP_UP_DONE            0x40
+#define STATE_POWER_SUPPLY_RAMP_UP           0x50
+#define STATE_HV_ON                          0x60
+#define STATE_FAULT_HEATER_OFF               0x70
+#define STATE_FAULT_HEATER_ON                0x80
+#define STATE_FAULT_HEATER_FAILURE           0x90
 
 #endif

@@ -15,6 +15,28 @@ TYPE_GLOBAL_DATA_A35975_250 global_data_A35975_250;
 
 
 
+
+
+void DoStateMachine(void);
+void DoA35975_250(void);
+void UpdateFaultsHeaterRampUp(void);
+void UpdateFaultsHeaterOn(void);
+void UpdateFaultsPowerSupplyRampUp(void);
+void UpdateFaultsPowerSupplyOn(void);
+void EnableHeater(void);
+void DisableHeater(void);
+void EnableHighVoltage(void);
+void DisableHighVoltage(void);
+void ResetFPGA(void);
+void ADCConfigure(void);
+void ADCStartAcquisition(void);
+void UpdateADCResults(void);
+void DACWriteChannel(unsigned int command_word, unsigned int data_word);
+void FPGAReadData(void);
+void DoHeaterRampUp(void);
+void InitializeA35975(void);
+unsigned int CheckFault(void);
+
 #define FPGA_ID     				0x0040  // used to verify GD FPGA communications
 
 // watch dog related
@@ -32,7 +54,7 @@ TYPE_GLOBAL_DATA_A35975_250 global_data_A35975_250;
 
 
 int main(void) {
-  control_state = STATE_START_UP;
+  global_data_A35975_250.control_state = STATE_START_UP;
 
   while (1) {
     DoStateMachine();
@@ -44,7 +66,7 @@ int main(void) {
 void DoStateMachine(void) {
   switch (global_data_A35975_250.control_state) {
 
-  case STATE_STARTUP:
+  case STATE_START_UP:
     InitializeA35975();
     DisableHighVoltage();
     DisableHeater();
@@ -54,16 +76,20 @@ void DoStateMachine(void) {
     global_data_A35975_250.led_flash_counter = 0;
     break;
 
+#define LED_STARTUP_FLASH_TIME   500 // 5 Seconds
 
   case STATE_WAIT_FOR_CONFIG:
     DisableHighVoltage();
     DisableHeater();
     while (global_data_A35975_250.control_state == STATE_WAIT_FOR_CONFIG) {
       DoA35975_250();
-      DoStartupLEDs();
+      //DoStartupLEDs();  // DPARKER ADD
+      /*
       if ((global_data_A35975_250.led_flash_counter >= LED_STARTUP_FLASH_TIME) && (_CONTROL_NOT_CONFIGURED == 0)) {
 	global_data_A35975_250.control_state = STATE_HEATER_RAMP_UP;
       }
+      DPARKER HANG OUT HERE FOR TESTING PHASE 1
+      */
     }
     break;
 
@@ -105,10 +131,10 @@ void DoStateMachine(void) {
 
   case STATE_POWER_SUPPLY_RAMP_UP:
     EnableHighVoltage();
-    power_supply_ramp_up_counter = 0;
+    global_data_A35975_250.power_supply_startup_up_counter = 0;
     while (global_data_A35975_250.control_state == STATE_POWER_SUPPLY_RAMP_UP) {
       global_data_A35975_250.analog_output_heater_voltage.set_point = global_data_A35975_250.heater_voltage_target;
-      if (power_supply_startup_up_counter >= GUN_DRIVER_POWER_SUPPLY_STATUP_TIME) {
+      if (global_data_A35975_250.power_supply_startup_up_counter >= GUN_DRIVER_POWER_SUPPLY_STATUP_TIME) {
 	global_data_A35975_250.control_state = STATE_HV_ON;
       }
       if (_SYNC_CONTROL_PULSE_SYNC_DISABLE_HV) {
@@ -158,6 +184,10 @@ void DoStateMachine(void) {
   }
 }
 
+unsigned int CheckFault(void) {
+  return 0;
+}
+
 
 void DoA35975_250(void) {
   
@@ -167,16 +197,24 @@ void DoA35975_250(void) {
   if (_T2IF) {
 
     // Run once every 10ms
-
-
     // Update to counter used to flash the LEDs at startup
     global_data_A35975_250.led_flash_counter++;
     if (global_data_A35975_250.led_flash_counter >= LED_STARTUP_FLASH_TIME) {
       global_data_A35975_250.led_flash_counter = LED_STARTUP_FLASH_TIME;
     }
 
+    global_data_A35975_250.power_supply_startup_up_counter++;
+    if (global_data_A35975_250.power_supply_startup_up_counter >= GUN_DRIVER_POWER_SUPPLY_STATUP_TIME) {
+      global_data_A35975_250.power_supply_startup_up_counter = GUN_DRIVER_POWER_SUPPLY_STATUP_TIME;
+    }
 
-
+    // Update Data from the FPGA
+    FPGAReadData();
+    
+    // Read all the data from the ADC
+    UpdateADCResults();
+    ADCStartAcquisition();
+        
   }
 }
 
@@ -219,6 +257,7 @@ void UpdateFaultsPowerSupplyOn(void) {
 
 }
 
+
 void EnableHeater(void) {
 
 }
@@ -247,25 +286,62 @@ void DisableHighVoltage(void) {
 */
 }
 
+#define DELAY_FPGA_CABLE_DELAY 10
+
 void ResetFPGA(void) {
+  PIN_CS_FPGA = OLL_PIN_CS_FPGA_SELECTED;
+  PIN_CS_DAC  = OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_ADC  = OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
+
+  PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
+  PIN_CS_DAC  = !OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_ADC  = !OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
 
 }
 
+
+
+// Define the input data byte
+#define MAX1230_CONVERSION_BYTE    0b10000011
+#define MAX1230_SETUP_BYTE         0b01101000
+// DPARKER DO we need to configure the unipolar mode register?????
+#define MAX1230_AVERAGE_BYTE       0b00111000
+#define MAX1230_RESET_BYTE         0b00010000
 
 
 void ADCConfigure(void) {
   /*
     Configure for read of all channels + temperature with 8x (or 16x) Averaging
   */
+  unsigned char temp;
+
+  PIN_CS_DAC  = !OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
+  PIN_CS_ADC  = OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
+    
+  temp = SendAndReceiveSPI(MAX1230_SETUP_BYTE, ETM_SPI_PORT_1);
+  temp = SendAndReceiveSPI(MAX1230_AVERAGE_BYTE, ETM_SPI_PORT_1);
+  temp = SendAndReceiveSPI(MAX1230_RESET_BYTE, ETM_SPI_PORT_1);
+
+  PIN_CS_ADC  = !OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
 }
 
 void ADCStartAcquisition(void) {
   /* 
      Start the acquisition process
   */
+
 }
 
-void ADCReadResults(void) {
+#define ADC_DATA_DIGITAL_HIGH   0x0800
+
+void UpdateADCResults(void) {
+  unsigned int data;
+  
   /*
     Read all the results of the 16 Channels + temp sensor
     16 bits per channel
@@ -273,34 +349,239 @@ void ADCReadResults(void) {
     272 bit message
     Approx 350us (counting processor overhead)
   */
+  
+  // Select the ADC
+  PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
+  PIN_CS_DAC  = !OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_ADC  = OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
+  
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_adc_temperature.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_hv_v_mon.filtered_adc_reading = data;
+  
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_hv_i_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_gun_i_peak.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_htr_v_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_htr_i_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_top_v_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_bias_v_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_temperature_mon.filtered_adc_reading = data;
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_warmup_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_warmup_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_watchdog_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_watchdog_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_arc_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_arc_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_over_temp_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_over_temp_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_pulse_width_duty_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_pulse_width_duty_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  if (data > ADC_DATA_DIGITAL_HIGH) {
+    global_data_A35975_250.adc_digital_grid_flt = 1;
+  } else {
+    global_data_A35975_250.adc_digital_grid_flt = 0;
+  }
+
+  data   = SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  data <<= 8;
+  data  += SendAndReceiveSPI(0x0000, ETM_SPI_PORT_1);
+  global_data_A35975_250.input_dac_monitor.filtered_adc_reading = data;
+
+  PIN_CS_ADC  = !OLL_PIN_CS_ADC_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
 }
 
 
-void DACWriteAllChannels(void) {
-  /*
-    Write all 8 channels to the DAC.
-    Message will be 24 bits per channel.
-    8 channels 
-    192 bit message.
-    At 1 mbit a full message is approx 250us (counting processor overhead)
-  */
 
+#define MAX_DAC_TX_ATTEMPTS       10
+
+void DACWriteChannel(unsigned int command_word, unsigned int data_word) {
+  unsigned int command_word_check;
+  unsigned int data_word_check;
+  unsigned int transmission_complete;
+  unsigned int loop_counter;
+  unsigned int spi_char;
+
+  transmission_complete = 0;
+  loop_counter = 0;
+  while (transmission_complete == 0) {
+    loop_counter++;
+
+    // -------------- Send Out the Data ---------------------//
+
+    // Select the DAC
+    PIN_CS_ADC  = !OLL_PIN_CS_ADC_SELECTED;
+    PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
+    PIN_CS_DAC  = OLL_PIN_CS_DAC_SELECTED;
+    __delay32(DELAY_FPGA_CABLE_DELAY);
+    
+    spi_char = (command_word >> 8) & 0x00FF;
+    command_word_check   = SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    command_word_check <<= 8;
+    spi_char = command_word & 0x00FF; 
+    command_word_check  += SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    
+
+    spi_char = (data_word >> 8) & 0x00FF;
+    data_word_check      = SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    data_word_check    <<= 8;
+    spi_char = data_word & 0x00FF; 
+    data_word_check     += SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    
+    PIN_CS_DAC = !OLL_PIN_CS_DAC_SELECTED;
+    __delay32(DELAY_FPGA_CABLE_DELAY);
+    
+
+
+    // ------------- Confirm the data was written correctly ------------------- //
+
+    PIN_CS_DAC = OLL_PIN_CS_DAC_SELECTED;
+    __delay32(DELAY_FPGA_CABLE_DELAY);
+
+    spi_char = (LTC265X_CMD_NO_OPERATION >> 8) & 0x00FF;
+    command_word_check   = SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    command_word_check <<= 8;
+    spi_char = LTC265X_CMD_NO_OPERATION & 0x00FF; 
+    command_word_check  += SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    
+    spi_char = 0;
+    data_word_check      = SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+    data_word_check    <<= 8;
+    spi_char = 0;
+    data_word_check     += SendAndReceiveSPI(spi_char, ETM_SPI_PORT_1);
+
+
+    PIN_CS_DAC = !OLL_PIN_CS_DAC_SELECTED;
+    __delay32(DELAY_FPGA_CABLE_DELAY);
+    
+
+    if ((command_word_check == command_word) && (data_word_check == data_word)) {
+      transmission_complete = 1;
+    } 
+    
+    if ((transmission_complete == 0) & (loop_counter >= MAX_DAC_TX_ATTEMPTS)) {
+      transmission_complete = 1;
+      // DPARKER INCREMENT SOME FAULT COUNTER AND INDICATE STATUS (NOT FAULT)
+    }
+  }
 }
 
-void ReadFPGA(void) {
+
+
+void FPGAReadData(void) {
+  unsigned long bits;
   /*
     Reads 32 bits from the FPGA
   */
+  
+  PIN_CS_ADC  = !OLL_PIN_CS_ADC_SELECTED;
+  PIN_CS_DAC  = !OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_FPGA = OLL_PIN_CS_FPGA_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
+
+  bits   = SendAndReceiveSPI(0xFFFF, ETM_SPI_PORT_1);
+  bits <<= 8;
+  bits  += SendAndReceiveSPI(0xFFFF, ETM_SPI_PORT_1);
+  bits <<= 8;
+  bits  += SendAndReceiveSPI(0xFFFF, ETM_SPI_PORT_1);
+  bits <<= 8;
+  bits  += SendAndReceiveSPI(0xFFFF, ETM_SPI_PORT_1);
+
+  global_data_A35975_250.fpga_data = *(TYPE_FPGA_DATA*)&bits;
+
+  PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
+  __delay32(DELAY_FPGA_CABLE_DELAY);
+  
 }
 
 
+
+
+#define MAX_HEATER_CURRENT_DURING_RAMP_UP  1000   // DPARKER Figure out Correct Value
+#define HEATER_RAMP_UP_INCREMENT           100    // DPARKER Figure out Correct Value
+
+
 void DoHeaterRampUp(void) {
-  if (heater_ramp_counter >= 100) {
+  if (global_data_A35975_250.heater_ramp_counter >= 100) {
     // We only update the ramp up once per second durring the ramp
-    heater_ramp_counter = 0;
+    global_data_A35975_250.heater_ramp_counter = 0;
 
     // If the current is less than the max ramp up current, then increase the heater program voltage
-    if (global_data_A35975_250.analog_input_heater_current.reading_scaled_and_calibrated < MAX_HEATER_CURRENT_DURING_RAMP_UP) {
+    if (global_data_A35975_250.input_htr_i_mon.reading_scaled_and_calibrated < MAX_HEATER_CURRENT_DURING_RAMP_UP) {
       global_data_A35975_250.analog_output_heater_voltage.set_point += HEATER_RAMP_UP_INCREMENT;
       if (global_data_A35975_250.analog_output_heater_voltage.set_point > global_data_A35975_250.heater_voltage_target) {
 	global_data_A35975_250.analog_output_heater_voltage.set_point = global_data_A35975_250.heater_voltage_target;
@@ -308,6 +589,8 @@ void DoHeaterRampUp(void) {
     }
   }  
 }
+
+
 
 void InitializeA35975(void) {
  
@@ -321,31 +604,13 @@ void InitializeA35975(void) {
   etm_can_my_configuration.firmware_branch = FIRMWARE_BRANCH;
   etm_can_my_configuration.firmware_minor_rev = FIRMWARE_MINOR_REV;
 
-  
-  // Init analog scaling for CAN bus
-#ifdef USE_ENGINEERING_UNIT_ON_GUN_DRIVER
-  CAN_scale_table[CAN_RD_EK  ].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAL_EK_RD/CAN_EK_SCALE);
-  CAN_scale_table[CAN_RD_IKP ].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAL_IKP_RD/CAN_IKP_SCALE);
-  CAN_scale_table[CAN_RD_EF  ].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAL_EF_RD/CAN_EF_SCALE);
-  CAN_scale_table[CAN_RD_IF  ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_IF_RD/CAN_IF_SCALE);
-  CAN_scale_table[CAN_RD_EG  ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_EG_RD/CAN_EG_SCALE);
-  CAN_scale_table[CAN_RD_EC  ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_EC_RD/CAN_EC_SCALE);
-  CAN_scale_table[CAN_RD_TEMP].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_TEMP_RD/CAN_TEMP_SCALE);
-
-  CAN_scale_table[CAN_RD_EKSET ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_EKSET/CAN_EKSET_SCALE);
-  CAN_scale_table[CAN_RD_EFSET ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_EFSET/CAN_EFSET_SCALE);
-  CAN_scale_table[CAN_RD_EGSET ].fixed_scale = MACRO_DEC_TO_CAL_FACTOR_2(CAL_EGSET/CAN_EGSET_SCALE);
-  CAN_scale_table[CAN_SET_EKSET].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAN_EKSET_SCALE/CAL_EKSET);
-  CAN_scale_table[CAN_SET_EFSET].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAN_EFSET_SCALE/CAL_EFSET);
-  CAN_scale_table[CAN_SET_EGSET].fixed_scale = MACRO_DEC_TO_SCALE_FACTOR_16(CAN_EGSET_SCALE/CAL_EGSET);
-#endif 
 
   // --------- BEGIN IO PIN CONFIGURATION ------------------
 
   // Initialize Ouput Pin Latches BEFORE setting the pins to Output
-  PIN_CS_DAC_ENABLE = !OLL_CS_DAC_ENABLE;
-  PIN_CS_ADC_ENABLE = !OLL_CS_ADC_ENABLE;
-  PIN_CS_AUX_ENABLE = !OLL_CS_AUX_ENABLE;
+  PIN_CS_DAC = !OLL_PIN_CS_DAC_SELECTED;
+  PIN_CS_ADC = !OLL_PIN_CS_ADC_SELECTED;
+  PIN_CS_FPGA = !OLL_PIN_CS_FPGA_SELECTED;
 	  
   // LOGIC Output Pins
   PIN_OPT_GD_READY  = !OLL_OPT_GD_READY;
@@ -408,16 +673,12 @@ void InitializeA35975(void) {
 
   ResetFPGA();
   
-  faults_reg_system_control = 0;
-  faults_reg_software = 0;	 
-  faults_reg_digi_from_gd_fpgaid = 0;
-  
 
   // Initialize the Can module
   ETMCanSlaveInitialize(FCY_CLK, ETM_CAN_ADDR_GUN_DRIVER_BOARD, _PIN_RG12, 4);
   ETMCanSlaveLoadConfiguration(35975, 250, FIRMWARE_AGILE_REV, FIRMWARE_BRANCH, FIRMWARE_MINOR_REV);
 
-
+  ADCConfigure();
 
   /* DPARKER move to led pulse state
   for (n = 0; n < 2; n++) {
@@ -465,206 +726,53 @@ void InitializeA35975(void) {
 
 
 
-unsigned char watch_dog_timer = 0;
-unsigned long read_cycles = 0;
-unsigned char gd_read_ptr;  // cycle the readbacks from gd fpga board
-unsigned int sec_count = 0;
-
-
-void Do10msTicToc(void) {
-  unsigned long temp;
-  unsigned int i, bit_value;
-  
-
-  // update one value from gd fpga board, watchdog channel is handled by watchdog kicking
-  if (gd_read_ptr < 12)	{	// don't care ch9, 13, 14
-    temp = ReadAdcChannel(gd_read_ptr);
-
-    if (gd_read_ptr <= 8) {
-      analog_reads[ gd_read_ptr ].read_cur = temp;
-      analog_reads[ gd_read_ptr ].read_cnt++;
-      CheckAnalogLimits(gd_read_ptr);
-    } else if (gd_read_ptr >= 10 && gd_read_ptr <= 11) {	// only care about wdog and arc faults 
-      i = gd_read_ptr - 9;
-      if (temp <= 2500) {
-	faults_from_ADC |= (1 << i);
-      } else {
-	faults_from_ADC &= ~(1 << i);
-      }
-      
-      if (digi_reads[i].action_code < 99) {
-	digi_reads[i].state = (temp > 2500);  
-	if (temp <= 2500) {
-	  DoFaultRecord(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i)); // mapped to fpgaID bit 1 & 2
-	}
-      }
-    }
-  } else {
-    temp = ReadFPGAID(); 
-    // check if the ID read is valid
-    if ((temp & 0x03c0) == (FPGA_ID & 0x03c0)) {  // check FPGA major version only.  0x40 for the low byte, two bits stay 0 for the 2nd low byte, xxxxxx00 01000000
-      temp >>= 16;
-      fpga_ASDR = (unsigned int)temp;
-      // handle digi faults from fpgaid
-      for (i = 0; i < 16; i++) {
-	bit_value = (temp & (1 << i)) > 0;
-	if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code < 99) {
-	  digi_reads[ i + DIGI_ID_ARC_COUNT].state = bit_value;
-	  if (bit_value) {
-	    DoFaultRecord(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
-	  } else if (digi_reads[ i + DIGI_ID_ARC_COUNT].action_code == 0) {   
-	    DoFaultClear(FAULTS_TYPE_DIGI_FROM_FPGAID, (1 << i));
-	  }
-	}
-      }
-      PIN_LED_AC_ON = OLL_LED_ON;    
-    } else { // declare a fault
-      PIN_LED_AC_ON = !OLL_LED_ON;    
-      DoFaultRecord(FAULTS_TYPE_SYSTEM_CONTROL, FAULTS_SYS_FPGAID);
-    }
-  }
-  
-  if (gd_read_ptr == 8)	{
-    gd_read_ptr = 9; // bypass ch9
-  } else if (gd_read_ptr == 11) {
-    gd_read_ptr = 14; // bypass ch12, 13, 14
-  } 
-  
-  gd_read_ptr = (gd_read_ptr + 1) & 0x000f;	 // 0 to 15 for gd_read_ptr
-  
-  if (!gd_read_ptr) {
-    read_cycles++;
-  }
-  
-  if (_T2IF) {
-    _T2IF = 0;
-    //10ms roll has occured
-    sec_count++;
-    if (sec_count > 200) {
-      read_cycles_in_2s = read_cycles;
-      read_cycles = 0;
-      sec_count = 0;
-    }
-        
-    if ((control_state & 0x7f) > STATE_READY_FOR_HEATER) {
-      if (_CONTROL_CAN_COM_LOSS)	{
-	// declare fault, turn all off
-	DoFaultRecord(FAULTS_TYPE_SYSTEM_CONTROL, FAULTS_SYS_CAN_TIMEOUT);
-	_FAULT_CAN_COMMUNICATION_LATCHED = 1;
-      }
-    }
-
-    watch_dog_timer++;
-    if (watch_dog_timer >= 3) {
-      DoFpgaWatchdog();  // tickle the watchdog every 30ms
-      watch_dog_timer = 0;
-    }
-    
-    // record debug data for CAN bus  
-    /*
-    local_debug_data.debug_0 = analog_reads[ANA_RD_EK].read_cur;
-    local_debug_data.debug_1 = analog_reads[ANA_RD_IKA].read_cur;
-    local_debug_data.debug_2 = analog_reads[ANA_RD_IKP].read_cur;
-    local_debug_data.debug_3 = analog_reads[ANA_RD_EF].read_cur;
- 
-    local_debug_data.debug_4 = analog_reads[ANA_RD_IF].read_cur;;
-    local_debug_data.debug_5 = analog_reads[ANA_RD_EG].read_cur;;
-    local_debug_data.debug_6 = analog_reads[ANA_RD_EC].read_cur;;
-    local_debug_data.debug_7 = analog_reads[ANA_RD_TEMP].read_cur;;
-    local_debug_data.debug_8 = control_state;
-    local_debug_data.debug_9 = htd_timer_in_100ms;
-    
-
-    local_debug_data.debug_D = analog_sets[ANA_SET_EK].ip_set;
-    local_debug_data.debug_E = analog_sets[ANA_SET_EF].ip_set;
-    local_debug_data.debug_F = analog_sets[ANA_SET_EG].ip_set;
-    */
-    local_debug_data.debug_0 = global_data_A35975_250.watchdog_count_error;
-    
-
-   
-    if (ekuv_timeout_10ms) {
-      if (ekuv_timeout_10ms < 1000) {
-	ekuv_timeout_10ms++;
-      }
-    }
-    
-   
-    if (ek_ref_changed_timer_10ms) {
-      ek_ref_changed_timer_10ms--;
-    }
-
-    if (ef_ref_changed_timer_10ms) {
-      ef_ref_changed_timer_10ms--;
-    }
-    
-    if (eg_ref_changed_timer_10ms) {
-      eg_ref_changed_timer_10ms--;
-    }
-
-    if (htr_OVOC_rest_delay_timer_10ms) {
-      htr_OVOC_rest_delay_timer_10ms--; 
-    }
-
-    
-    if ((_FAULT_REGISTER &  0x04 /*_FAULT_GD_SW_HTR_OVOC */) && (htr_OVOC_count == 0)) {
-      if (_SYNC_CONTROL_RESET_ENABLE  && ((faults_reg_software & FAULTS_SW_EFOV_IFOC) == 0))
-	_FAULT_REGISTER = _FAULT_REGISTER & (~0x04/* _FAULT_GD_SW_HTR_OVOC */);
-    }
-    
-    
-    led_pulse_count = ((led_pulse_count + 1) & 0b00111111);	 // 640ms
-    if (led_pulse_count == 0) {
-      // 10ms * 16 counter has ocurred
-      if (PIN_LED_LAST_PULSE_GOOD) {
-	PIN_LED_LAST_PULSE_GOOD = 0;
-      } else {
-	PIN_LED_LAST_PULSE_GOOD = 1;
-      }  
-    }
-  } 
-}
 
 /*
+  Needs to perform the following 
+    
+  1) Read an ADC channel from the Logic Board (there are 16 Channels)
+    AIN 0 - Vmon
+    AIN 1 - Imon
+    AIN 2 - Gun I Peak
+    AIN 3 - Heater Voltage
+    AIN 4 - Heater Current
+    AIN 5 - Top Voltage
+    AIN 6 - Bias Voltage
+    AIN 7 - 24V divided by 6.67 = 3.6 Volts
+    AIN 8 - Temperature
+    AIN 9 - "DIGITAL" warmup / flt
+    AIN 10 - "DIGITAL" watchdog fault
+    AIN 11 - "DIGITAL" Arc fault
+    AIN 12 - "DIGITAL" Temperature greater than 65 C
+    AIN 13 - "DIGITAL" Pulse Width / Duty Fault
+    AIN 14 - "DIGITAL" Grid Fault
+    AIN 15 - Dac Feedback Voltage
+    
+
+  2) Write a DAC Channel to the Logic Board
+    CHN A - High Voltage Adjust
+    CHN B - Top Voltage
+    CHN C - Heater Voltage
+    CHN D - "Digital" High Voltage Enable
+    CHN E - "Digital" Heater Enable
+    CHN F - "Digital" Top Enable
+    CHN G - "Digital" Trigger Enable
+    CHN H - Watch Dog Analog Setting
+    
+
+  3) Read bits from the FPGA
+    Read 32 bits from FPGA - See documentation for bit meaning
+
+*/
 
 
-/////////////////////////////////////////////////////////////////////////
-// DoFpgaWatchdog() 
-// send a watchdog DAC to fpga board 
-//
-static void DoFpgaWatchdog(void)
-{
-  static unsigned char kicked_1v = 0;
-  static unsigned error_count = 0;
-  int temp, counts;
-    
-    
-  counts = kicked_1v? WATCHDOG_1V_FEEDBACK : WATCHDOG_3V_FEEDBACK;
-  temp = (int)ReadAdcChannel(15);
-    
-#ifndef DEMO
-  if ((temp < (counts - WATCHDOG_FEEDBACK_MARGIN)) || (temp > (counts + WATCHDOG_FEEDBACK_MARGIN))) {
-    error_count++;
-    if (error_count >= WATCHDOG_ERR_MAX) {            	
-      DoFaultRecord(FAULTS_TYPE_SYSTEM_CONTROL, FAULTS_SYS_FPGA_WATCHDOG_ERR);
-    } 
-  }
-  else {
-    error_count = 0;
-  }
-#endif
-    
-  if (kicked_1v) {
-    kicked_1v = 0;
-    counts = WATCHDOG_3V_KICK;    
-  }
-  else {
-    kicked_1v = 1;
-    counts = WATCHDOG_1V_KICK;
-  }
-    
-  SendWatchdogRef(counts);													
-    	 
-     
-}
+/*
+  Once every 10ms - SPI is 1 Mbit
+  1) Read the entire 32 bits from FPGA - ~100uS
+  2) Read all 17 Channels from the ADC (averaged) - ~300us
+  3) Start Next ADC acquisition sequence (This will completed in less than 3ms)
+  
+  The DAC is not continuously updated
+  ONLY the Watch Dog is Continuously Written (this is toggled once every 30ms)
+*/
 

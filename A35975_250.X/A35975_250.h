@@ -89,20 +89,14 @@
 #define A35975_TRISG_VALUE 0b0000000000000001
 
 //------------------- GUN Driver Interface I/O ------------------------- //
-// FPGA Output Pins
-#define PIN_CS_DAC_ENABLE                    _LATD13		   
-#define OLL_CS_DAC_ENABLE                    1
+#define PIN_CS_DAC                          _LATD13
+#define OLL_PIN_CS_DAC_SELECTED             1
 
-#define PIN_CS_ADC_ENABLE                    _LATD14		   
-#define OLL_CS_ADC_ENABLE                    1
+#define PIN_CS_ADC                          _LATD14
+#define OLL_PIN_CS_ADC_SELECTED             1
 
-#define PIN_CS_AUX_ENABLE                    _LATD15		   
-#define OLL_CS_AUX_ENABLE                    1
-
-#define PIN_CS_DAC_ENABLE_BIT                0x2000
-#define PIN_CS_ADC_ENABLE_BIT                0x4000
-#define PIN_CS_AUX_ENABLE_BIT                0x8000
-#define PIN_CS_ALL_ENABLE_BITS               0xe000
+#define PIN_CS_FPGA                         _LATD15
+#define OLL_PIN_CS_FPGA_SELECTED            1
 
 
 // LOGIC Output Pins
@@ -274,22 +268,6 @@ enum {
 
 
 
-extern void FaultEk(unsigned state);
-extern void FaultEf(unsigned state);
-extern void FaultIf(unsigned state);
-extern void FaultEg(unsigned state);
-extern void FaultEc(unsigned state);
-extern void Fault24v(unsigned state);
-
-extern void SetEfLimits(void);
-extern void SetEkLimits(void);
-extern void SetEgLimits(void);
-
-extern void SetEf(unsigned set_value);
-extern void SetEk(unsigned set_value);
-extern void SetEg(unsigned set_value);
-
-extern unsigned char AreAnyReferenceNotConfigured(void);
 
 // analog read pointers
 enum {
@@ -453,21 +431,6 @@ enum {
   --- Public Functions ---
 */
 
-extern void DoStateMachine(void);
-
-extern void LogicHeaterControl(unsigned char turnon);
-extern void LogHvControl(unsigned char turnon);
-extern void LogPulsetopControl(unsigned char turnon);
-extern void LogTrigControl(unsigned char turnon);
-
-extern void SendHeaterRef(unsigned int bits);
-extern void SendHvRef(unsigned int bits);
-extern void SendPulsetopRef(unsigned int bits);
-extern void SendWatchdogRef(unsigned int bits);
-
-extern void Do10msTicToc(void);
-extern void ResetFPGA(void);
-
 
 #define SYSTEM_WARM_UP_TIME      3000 /* 100ms Units  //DPARKER this is way to short */
 #define EF_READ_MAX              2838 /*  -6.3/-0.00222 */
@@ -511,27 +474,55 @@ extern void ResetFPGA(void);
 #define _FAULT_GD_SYS_FAULTS                            _FAULT_E
 
 
+#define _FAULT_PIC_HEATER_TURN_OFF                      _FAULT_0
 
+
+
+typedef struct {
+  unsigned converter_logic_pcb_rev:6;
+  unsigned fpga_firmware_major_rev:4;
+  unsigned fpga_firmware_minor_rev:6;
+  unsigned arc:1;
+  unsigned arc_high_voltage_inihibit_active:1;
+  unsigned heater_voltage_greater_than_4_5_volts:1;
+  unsigned module_temp_greater_than_65_C:1;
+  unsigned module_temp_greater_than_75_C:1;
+  unsigned pulse_width_limiting_active:1;
+  unsigned prf_fault:1;
+  unsigned current_monitor_pulse_width_fault:1;
+  unsigned grid_module_hardware_fault:1;
+  unsigned grid_module_over_voltage_fault:1;
+  unsigned grid_module_under_voltage_fault:1;
+  unsigned grid_module_bias_voltage_fault:1;
+  unsigned hv_regulation_warning:1;
+  unsigned dipswitch_1_on:1;
+  unsigned test_mode_toggle_switch_set_to_test:1;
+  unsigned local_mode_toggle_switch_set_to_local:1;
+} TYPE_FPGA_DATA;
 
 typedef struct {
   unsigned int watchdog_count_error;
   unsigned int control_state;
   unsigned int start_up_counter;
+  unsigned int led_flash_counter;
+  unsigned int power_supply_startup_up_counter;
 
   unsigned int heater_voltage_target;   // This is the targeted heater voltage set poing
   unsigned int heater_ramp_counter;
-  AnalogOutput analog_output_heater_voltage;
+
+
+  // These are the DAC outputs
   AnalogOutput analog_output_high_voltage;
   AnalogOutput analog_output_top_voltage;
+  AnalogOutput analog_output_heater_voltage;
+  unsigned int dac_digital_hv_enable;
+  unsigned int dac_digital_heater_enable;
+  unsigned int dac_digital_top_enable;
+  unsigned int dac_digital_trigger_enable;
+  unsigned int dac_digital_watchdog_oscillator;
 
-  unsigned int FPGA_input_hv_enable;
-  unsigned int FPGA_input_htr_enable;
-  unsigned int FPGA_input_top_enable;
-  unsigned int FPGA_input_trigger_enable;
-  unsigned int FPGA_watc;
-  
-  unsigned int power_supply_startup_up_counter;
-  
+  // These are the ADC inputs
+  AnalogInput  input_adc_temperature;
   AnalogInput  input_hv_v_mon;
   AnalogInput  input_hv_i_mon;
   AnalogInput  input_gun_i_peak;
@@ -541,24 +532,21 @@ typedef struct {
   AnalogInput  input_bias_v_mon;
   AnalogInput  input_24_v_mon;
   AnalogInput  input_temperature_mon;
-
-  unsigned int FPGA_output_grid_fault_not;
-  unsigned int FPGA_output_pw_duty_fault_not;
-  unsigned int FPGA_output_temp_gt_nott;
-  unsigned int FPGA_output_arc_fault_not;
-  unsigned int FPGA_output_watchdog_fault_not;
-  unsigned int FPGA_otuput_htr_warmup_fault_not;
-
-  unsigned int adc;
+  unsigned int adc_digital_warmup_flt;
+  unsigned int adc_digital_watchdog_flt;
+  unsigned int adc_digital_arc_flt;
+  unsigned int adc_digital_over_temp_flt;
+  unsigned int adc_digital_pulse_width_duty_flt;
+  unsigned int adc_digital_grid_flt;
+  AnalogInput  input_dac_monitor;
 
 
-
-
-
+  TYPE_FPGA_DATA fpga_data;
 
 } TYPE_GLOBAL_DATA_A35975_250;
 
 
+extern TYPE_GLOBAL_DATA_A35975_250 global_data_A35975_250;
 
 #define STATE_START_UP                       0x10
 #define STATE_WAIT_FOR_CONFIG                0x20

@@ -542,6 +542,12 @@ typedef struct {
 
 
   TYPE_FPGA_DATA fpga_data;
+  unsigned int adc_read_error_count;
+  unsigned int adc_read_error_test;
+
+  unsigned int dac_write_error_count;
+  unsigned int dac_write_failure;
+  unsigned int dac_write_failure_count;
 
 } TYPE_GLOBAL_DATA_A35975_250;
 
